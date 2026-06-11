@@ -35,7 +35,7 @@ export async function handleUserRoute(req: Request, url: URL): Promise<Response>
 
     const watched = db.query(`
       SELECT uw.id, m.name, uw.rating, uw.added_at AS addedAt,
-             m.poster, m.tmdb_url AS tmdbUrl, m.year, m.tmdb_id AS tmdbId, m.type
+             m.poster, m.critic_rating AS criticRating, m.tmdb_url AS tmdbUrl, m.year, m.tmdb_id AS tmdbId, m.type
       FROM user_watched uw
       JOIN media m ON m.tmdb_id = uw.tmdb_id AND m.type = uw.type
       WHERE uw.username = ?
@@ -73,15 +73,15 @@ export async function handleUserRoute(req: Request, url: URL): Promise<Response>
     const addedAt = new Date().toISOString();
 
     db.run(
-      `INSERT OR IGNORE INTO media (tmdb_id, type, name, poster, tmdb_url, year) VALUES (?, ?, ?, ?, ?, ?)`,
-      [tmdbId, type, name.trim(), (poster as string | null) ?? null, (tmdbUrl as string | null) ?? null, (year as string | null) ?? null],
+      `INSERT OR IGNORE INTO media (tmdb_id, type, name, poster, tmdb_url, year, critic_rating) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [tmdbId, type, name.trim(), (poster as string | null) ?? null, (tmdbUrl as string | null) ?? null, (year as string | null) ?? null, (body.criticRating as number | null) ?? null],
     );
     db.run(
       `INSERT INTO user_watched (id, username, tmdb_id, type, rating, added_at) VALUES (?, ?, ?, ?, ?, ?)`,
       [id, username, tmdbId, type, rating, addedAt],
     );
 
-    return Response.json({ id, name: name.trim(), rating, addedAt, poster, tmdbUrl, year, tmdbId, type }, { status: 201 });
+    return Response.json({ id, name: name.trim(), rating, addedAt, poster, criticRating: body.criticRating, tmdbUrl, year, tmdbId, type }, { status: 201 });
   }
 
   // PUT /api/user/:username/watched/:id/rating
@@ -103,7 +103,7 @@ export async function handleUserRoute(req: Request, url: URL): Promise<Response>
 
     const entry = db.query(`
       SELECT uw.id, m.name, uw.rating, uw.added_at AS addedAt,
-             m.poster, m.tmdb_url AS tmdbUrl, m.year, m.tmdb_id AS tmdbId, m.type
+             m.poster, m.critic_rating AS criticRating, m.tmdb_url AS tmdbUrl, m.year, m.tmdb_id AS tmdbId, m.type
       FROM user_watched uw
       JOIN media m ON m.tmdb_id = uw.tmdb_id AND m.type = uw.type
       WHERE uw.id = ?
@@ -196,7 +196,7 @@ export async function handleUserRoute(req: Request, url: URL): Promise<Response>
 
     const entry = db.query(`
       SELECT uw.id, m.name, uw.rating, uw.added_at AS addedAt,
-             m.poster, m.tmdb_url AS tmdbUrl, m.year, m.tmdb_id AS tmdbId, m.type
+             m.poster, m.critic_rating AS criticRating, m.tmdb_url AS tmdbUrl, m.year, m.tmdb_id AS tmdbId, m.type
       FROM user_watched uw
       JOIN media m ON m.tmdb_id = uw.tmdb_id AND m.type = uw.type
       WHERE uw.id = ?

@@ -37,6 +37,15 @@ function serveStatic(url: URL): Response | null {
   });
 }
 
+async function fetchTMDBPage(apiKey: string, query: string, page: number) {
+  const res = await fetch(
+    `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=en-US&page=${page}`,
+    { headers: { Accept: 'application/json' } },
+  );
+  if (!res.ok) return null;
+  return res.json();
+}
+
 async function handleSearch(url: URL): Promise<Response> {
   const apiKey = process.env.TMDB_API_KEY;
   if (!apiKey) {
@@ -48,31 +57,27 @@ async function handleSearch(url: URL): Promise<Response> {
     return Response.json({ error: 'query is required' }, { status: 400 });
   }
 
-  const res = await fetch(
-    `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=en-US&page=1`,
-    { headers: { Accept: 'application/json' } },
-  );
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    return Response.json(
-      { error: `TMDB search failed (${res.status})`, detail },
-      { status: 502 },
-    );
+  const data1 = await fetchTMDBPage(apiKey, query, 1);
+  if (!data1) {
+    return Response.json({ error: 'TMDB search failed' }, { status: 502 });
   }
 
-  const data = await res.json();
+  let combinedResults = data1.results ?? [];
 
-  // Normalize results: filter out 'person', unify TV fields to movie-style fields.
-  const results = (data.results ?? [])
+  if (data1.total_pages > 1) {
+    const data2 = await fetchTMDBPage(apiKey, query, 2);
+    if (data2 && data2.results) {
+      combinedResults = [...combinedResults, ...data2.results];
+    }
+  }
+
+  const results = combinedResults
     .filter((r: any) => r.media_type === 'movie' || r.media_type === 'tv')
     .map((r: any) => ({
       id: r.id,
       media_type: r.media_type as 'movie' | 'tv',
-      // TV uses 'name'; movies use 'title'
       title: r.media_type === 'tv' ? (r.name ?? r.original_name ?? '') : (r.title ?? r.original_title ?? ''),
       poster_path: r.poster_path ?? null,
-      // TV uses 'first_air_date'; movies use 'release_date'
       release_date: r.media_type === 'tv' ? (r.first_air_date ?? '') : (r.release_date ?? ''),
       vote_average: r.vote_average ?? 0,
     }));

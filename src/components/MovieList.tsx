@@ -138,13 +138,14 @@ export function MovieList({
               <span className="index">#{i + 1}</span>
               {entry.poster && <img src={entry.poster} alt="" className="movie-poster" />}
               <span className="name">
+                {entry.type === 'tv' && <span className="media-type-tag">TV</span>}
                 {entry.name}
                 {(entry as any).year ? (
                   <span className="movie-year">{(entry as any).year}</span>
                 ) : null}
-                {type === 'watchlist' && (entry as WatchlistEntry).criticRating ? (
+                {entry.criticRating ? (
                   <span className="critic-rating">
-                    {(entry as WatchlistEntry).criticRating!.toFixed(1)}
+                    {entry.criticRating.toFixed(1)}
                   </span>
                 ) : null}
               </span>

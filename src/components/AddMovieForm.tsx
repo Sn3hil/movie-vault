@@ -56,7 +56,7 @@ export function AddMovieForm({ placeholder = 'Search...', onAdd, existingIds }: 
       }
       setError(null);
       const results: MovieSearchResult[] = await res.json();
-      setSuggestions(results.slice(0, 5));
+      setSuggestions(results.slice(0, 30));
       setShowSuggestions(results.length > 0);
       setSelectedIndex(-1); // reset keyboard selection on every new result set
     } catch (err) {
@@ -172,7 +172,7 @@ export function AddMovieForm({ placeholder = 'Search...', onAdd, existingIds }: 
                 {result.release_date ? `(${result.release_date.slice(0, 4)})` : ''}
               </span>
               {result.media_type === 'tv' && (
-                <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 3, background: 'var(--blue)', color: '#fff', marginLeft: 4, fontWeight: 600, flexShrink: 0 }}>TV</span>
+                <span className="media-type-tag" style={{ marginLeft: 4 }}>TV</span>
               )}
               {!existingIds?.has(`${result.media_type}-${result.id}`) && (
                 <button

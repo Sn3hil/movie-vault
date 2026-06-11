@@ -4,6 +4,7 @@ export interface WatchedEntry {
   rating: number;
   addedAt: string;
   poster?: string;
+  criticRating?: number;
   tmdbUrl?: string;
   year?: string;
   tmdbId: number;
@@ -38,6 +39,7 @@ export interface RoomWatchedEntry {
   ratings: RoomRatings;
   addedAt: string;
   poster?: string;
+  criticRating?: number;
   addedBy: string;
   tmdbUrl?: string;
   year?: string;

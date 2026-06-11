@@ -30,8 +30,8 @@ function isMediaType(v: unknown): v is MediaType {
 function fetchRoomWatched() {
   const entries = db.query(`
     SELECT rw.id, m.name, rw.rating, rw.added_at AS addedAt,
-           m.poster, rw.added_by AS addedBy, m.tmdb_url AS tmdbUrl, m.year,
-           m.tmdb_id AS tmdbId, m.type
+           m.poster, rw.added_by AS addedBy, m.critic_rating AS criticRating,
+           m.tmdb_url AS tmdbUrl, m.year, m.tmdb_id AS tmdbId, m.type
     FROM room_watched rw
     JOIN media m ON m.tmdb_id = rw.tmdb_id AND m.type = rw.type
     ORDER BY rw.added_at DESC
@@ -88,8 +88,8 @@ export async function handleRoomRoute(req: Request, url: URL): Promise<Response>
 
     db.transaction(() => {
       db.run(
-        `INSERT OR IGNORE INTO media (tmdb_id, type, name, poster, tmdb_url, year) VALUES (?, ?, ?, ?, ?, ?)`,
-        [tmdbId, type, name.trim(), (poster as string | null) ?? null, (tmdbUrl as string | null) ?? null, (year as string | null) ?? null],
+        `INSERT OR IGNORE INTO media (tmdb_id, type, name, poster, tmdb_url, year, critic_rating) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [tmdbId, type, name.trim(), (poster as string | null) ?? null, (tmdbUrl as string | null) ?? null, (year as string | null) ?? null, (body.criticRating as number | null) ?? null],
       );
       db.run(
         `INSERT INTO room_watched (id, tmdb_id, type, rating, added_at, added_by) VALUES (?, ?, ?, ?, ?, ?)`,
@@ -135,8 +135,8 @@ export async function handleRoomRoute(req: Request, url: URL): Promise<Response>
 
     const entry = db.query(`
       SELECT rw.id, m.name, rw.rating, rw.added_at AS addedAt,
-             m.poster, rw.added_by AS addedBy, m.tmdb_url AS tmdbUrl, m.year,
-             m.tmdb_id AS tmdbId, m.type
+             m.poster, rw.added_by AS addedBy, m.critic_rating AS criticRating,
+             m.tmdb_url AS tmdbUrl, m.year, m.tmdb_id AS tmdbId, m.type
       FROM room_watched rw
       JOIN media m ON m.tmdb_id = rw.tmdb_id AND m.type = rw.type
       WHERE rw.id = ?
