@@ -9,7 +9,14 @@ import type { TabType } from './types';
 
 export function App() {
   const [loggedIn, setLoggedIn] = useState(!!getUsername());
-  const [currentTab, setCurrentTab] = useState<TabType>('personal');
+  const [currentTab, setCurrentTab] = useState<TabType>(() => {
+    return (localStorage.getItem('vault_main_tab') as TabType) || 'personal';
+  });
+
+  const handleTabChange = (tab: TabType) => {
+    setCurrentTab(tab);
+    localStorage.setItem('vault_main_tab', tab);
+  };
 
   if (!loggedIn) {
     return <LoginScreen onLogin={() => setLoggedIn(true)} />;
@@ -19,7 +26,7 @@ export function App() {
 
   return (
     <TerminalWindow onLogout={() => setLoggedIn(false)}>
-      <TabBar currentTab={currentTab} onTabChange={setCurrentTab} />
+      <TabBar currentTab={currentTab} onTabChange={handleTabChange} />
       {currentTab === 'personal' ? (
         <PersonalView username={username} />
       ) : (

@@ -11,7 +11,14 @@ interface RoomViewProps {
 type SubTabType = 'watched' | 'watchlist' | 'rewatch';
 
 export function RoomView({ username }: RoomViewProps) {
-  const [activeSubTab, setActiveSubTab] = useState<SubTabType>('watched');
+  const [activeSubTab, setActiveSubTab] = useState<SubTabType>(() => {
+    return (localStorage.getItem('vault_room_tab') as SubTabType) || 'watched';
+  });
+
+  const handleTabChange = (tab: SubTabType) => {
+    setActiveSubTab(tab);
+    localStorage.setItem('vault_room_tab', tab);
+  };
   const lastUpdate = useSSE();
   const { room, roomActions } = useRoomMovies(lastUpdate);
 
@@ -36,19 +43,19 @@ export function RoomView({ username }: RoomViewProps) {
       <div className="sub-tab-bar">
         <div 
           className={`sub-tab-item${activeSubTab === 'watched' ? ' active' : ''}`}
-          onClick={() => setActiveSubTab('watched')}
+          onClick={() => handleTabChange('watched')}
         >
           {'>'} Room Watched ({watched.length})
         </div>
         <div 
           className={`sub-tab-item${activeSubTab === 'watchlist' ? ' active' : ''}`}
-          onClick={() => setActiveSubTab('watchlist')}
+          onClick={() => handleTabChange('watchlist')}
         >
           {'>'} Room Watchlist ({watchlist.length})
         </div>
         <div 
           className={`sub-tab-item${activeSubTab === 'rewatch' ? ' active' : ''}`}
-          onClick={() => setActiveSubTab('rewatch')}
+          onClick={() => handleTabChange('rewatch')}
         >
           {'>'} Room Rewatch ({rewatch.length})
         </div>

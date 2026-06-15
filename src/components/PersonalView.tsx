@@ -11,7 +11,14 @@ interface PersonalViewProps {
 type SubTabType = 'watched' | 'watchlist' | 'rewatch';
 
 export function PersonalView({ username }: PersonalViewProps) {
-  const [activeSubTab, setActiveSubTab] = useState<SubTabType>('watched');
+  const [activeSubTab, setActiveSubTab] = useState<SubTabType>(() => {
+    return (localStorage.getItem('vault_personal_tab') as SubTabType) || 'watched';
+  });
+
+  const handleTabChange = (tab: SubTabType) => {
+    setActiveSubTab(tab);
+    localStorage.setItem('vault_personal_tab', tab);
+  };
   const { user, userActions } = useFetchBased(username);
   const room = useFetch<any>('/api/room');
 
@@ -43,19 +50,19 @@ export function PersonalView({ username }: PersonalViewProps) {
       <div className="sub-tab-bar">
         <div 
           className={`sub-tab-item${activeSubTab === 'watched' ? ' active' : ''}`}
-          onClick={() => setActiveSubTab('watched')}
+          onClick={() => handleTabChange('watched')}
         >
           {'>'} Watched ({watched.length})
         </div>
         <div 
           className={`sub-tab-item${activeSubTab === 'watchlist' ? ' active' : ''}`}
-          onClick={() => setActiveSubTab('watchlist')}
+          onClick={() => handleTabChange('watchlist')}
         >
           {'>'} Watchlist ({watchlist.length})
         </div>
         <div 
           className={`sub-tab-item${activeSubTab === 'rewatch' ? ' active' : ''}`}
-          onClick={() => setActiveSubTab('rewatch')}
+          onClick={() => handleTabChange('rewatch')}
         >
           {'>'} Rewatch ({rewatch.length})
         </div>
