@@ -166,6 +166,37 @@
   font-weight: 700;
 }
 
+.sub-tab-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 4px;
+  border-bottom: var(--border);
+  padding-bottom: 4px;
+}
+
+.sub-tab-item {
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--overlay-1);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: color 0.15s;
+}
+
+.sub-tab-item:hover {
+  color: var(--text);
+}
+
+.sub-tab-item.active {
+  color: var(--rosewater);
+  font-weight: 700;
+}
+
+.tab-pane {
+  animation: fadeIn 0.2s ease both;
+}
+
 .movie-list {
   display: flex;
   flex-direction: column;
@@ -322,6 +353,16 @@
 
 .btn-warning:hover {
   background: var(--yellow);
+  color: var(--base);
+}
+
+.btn-teal {
+  color: var(--teal);
+  border-color: var(--teal);
+}
+
+.btn-teal:hover {
+  background: var(--teal);
   color: var(--base);
 }
 

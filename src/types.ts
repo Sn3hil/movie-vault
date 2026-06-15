@@ -23,9 +23,22 @@ export interface WatchlistEntry {
   type: 'movie' | 'tv';
 }
 
+export interface RewatchEntry {
+  id: string;
+  name: string;
+  addedAt: string;
+  poster?: string;
+  criticRating?: number;
+  tmdbUrl?: string;
+  year?: string;
+  tmdbId: number;
+  type: 'movie' | 'tv';
+}
+
 export interface UserData {
   watched: WatchedEntry[];
   watchlist: WatchlistEntry[];
+  rewatch: RewatchEntry[];
 }
 
 export interface RoomRatings {
@@ -51,9 +64,14 @@ export type RoomWatchlistEntry = WatchlistEntry & {
   addedBy: string;
 };
 
+export type RoomRewatchEntry = RewatchEntry & {
+  addedBy: string;
+};
+
 export interface RoomData {
   watched: RoomWatchedEntry[];
   watchlist: RoomWatchlistEntry[];
+  rewatch: RoomRewatchEntry[];
 }
 
 export type TabType = 'personal' | 'room';

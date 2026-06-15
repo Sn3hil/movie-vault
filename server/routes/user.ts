@@ -52,7 +52,17 @@ export async function handleUserRoute(req: Request, url: URL): Promise<Response>
       ORDER BY uwl.added_at DESC
     `).all(username);
 
-    return Response.json({ watched, watchlist });
+    const rewatch = db.query(`
+      SELECT ur.id, m.name, ur.added_at AS addedAt,
+             m.poster, m.critic_rating AS criticRating, m.tmdb_url AS tmdbUrl, m.year,
+             m.tmdb_id AS tmdbId, m.type
+      FROM user_rewatch ur
+      JOIN media m ON m.tmdb_id = ur.tmdb_id AND m.type = ur.type
+      WHERE ur.username = ?
+      ORDER BY ur.added_at DESC
+    `).all(username);
+
+    return Response.json({ watched, watchlist, rewatch });
   }
 
   // POST /api/user/:username/watched
@@ -203,6 +213,106 @@ export async function handleUserRoute(req: Request, url: URL): Promise<Response>
     `).get(newId);
 
     return Response.json(entry, { status: 201 });
+  }
+
+  // POST /api/user/:username/rewatch
+  if (parts.length === 4 && parts[3] === 'rewatch' && req.method === 'POST') {
+    const username = parts[2];
+    const err = validateUsername(username);
+    if (err) return Response.json({ error: err }, { status: 400 });
+
+    const body = await parseBody(req);
+    const { tmdbId, type, name, poster, tmdbUrl, year, criticRating } = body as Record<string, unknown>;
+
+    if (typeof tmdbId !== 'number') return Response.json({ error: 'tmdbId must be a number' }, { status: 400 });
+    if (!isMediaType(type)) return Response.json({ error: 'type must be "movie" or "tv"' }, { status: 400 });
+    if (!name || typeof name !== 'string' || !name.trim()) return Response.json({ error: 'name is required' }, { status: 400 });
+
+    const id = generateId();
+    const addedAt = new Date().toISOString();
+    const parsedCriticRating = typeof criticRating === 'number' ? criticRating : null;
+
+    db.run(
+      `INSERT OR IGNORE INTO media (tmdb_id, type, name, poster, tmdb_url, year, critic_rating) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [tmdbId, type, name.trim(), (poster as string | null) ?? null, (tmdbUrl as string | null) ?? null, (year as string | null) ?? null, parsedCriticRating],
+    );
+    db.run(
+      `INSERT INTO user_rewatch (id, username, tmdb_id, type, added_at) VALUES (?, ?, ?, ?, ?)`,
+      [id, username, tmdbId, type, addedAt],
+    );
+
+    return Response.json(
+      { id, name: name.trim(), addedAt, poster, criticRating: parsedCriticRating, tmdbUrl, year, tmdbId, type },
+      { status: 201 },
+    );
+  }
+
+  // DELETE /api/user/:username/rewatch/:id
+  if (parts.length === 5 && parts[3] === 'rewatch' && req.method === 'DELETE') {
+    const username = parts[2];
+    const id = parts[4];
+    const err = validateUsername(username);
+    if (err) return Response.json({ error: err }, { status: 400 });
+
+    db.run(`DELETE FROM user_rewatch WHERE id = ? AND username = ?`, [id, username]);
+    return Response.json({ success: true });
+  }
+
+  // POST /api/user/:username/watched/:id/move-to-rewatch
+  if (parts.length === 6 && parts[3] === 'watched' && parts[5] === 'move-to-rewatch' && req.method === 'POST') {
+    const username = parts[2];
+    const id = parts[4];
+    const err = validateUsername(username);
+    if (err) return Response.json({ error: err }, { status: 400 });
+
+    const existing = db.query(
+      `SELECT tmdb_id, type FROM user_watched WHERE id = ? AND username = ?`,
+    ).get(id, username) as { tmdb_id: number; type: string } | null;
+
+    if (!existing) return Response.json({ error: 'not found' }, { status: 404 });
+
+    const newId = generateId();
+    const addedAt = new Date().toISOString();
+
+    db.transaction(() => {
+      // Intentionally do NOT delete from user_watched
+      db.run(
+        `INSERT INTO user_rewatch (id, username, tmdb_id, type, added_at) VALUES (?, ?, ?, ?, ?)`,
+        [newId, username, existing.tmdb_id, existing.type, addedAt],
+      );
+    })();
+
+    return Response.json({ id: newId, tmdbId: existing.tmdb_id, type: existing.type, addedAt }, { status: 201 });
+  }
+
+  // POST /api/user/:username/rewatch/:id/move-to-watched
+  if (parts.length === 6 && parts[3] === 'rewatch' && parts[5] === 'move-to-watched' && req.method === 'POST') {
+    const username = parts[2];
+    const id = parts[4];
+    const err = validateUsername(username);
+    if (err) return Response.json({ error: err }, { status: 400 });
+
+    const body = await parseBody(req);
+    const rating = typeof body.rating === 'number' ? Math.max(0, Math.min(5, Math.round(body.rating))) : 0;
+
+    const existing = db.query(
+      `SELECT tmdb_id, type FROM user_rewatch WHERE id = ? AND username = ?`,
+    ).get(id, username) as { tmdb_id: number; type: string } | null;
+
+    if (!existing) return Response.json({ error: 'not found' }, { status: 404 });
+
+    const newId = generateId();
+    const addedAt = new Date().toISOString();
+
+    db.transaction(() => {
+      db.run(`DELETE FROM user_rewatch WHERE id = ? AND username = ?`, [id, username]);
+      db.run(
+        `UPDATE user_watched SET rating = ? WHERE tmdb_id = ? AND type = ? AND username = ?`,
+        [rating, existing.tmdb_id, existing.type, username],
+      );
+    })();
+
+    return Response.json({ id: existing.tmdb_id /* Send back something valid */, tmdbId: existing.tmdb_id, type: existing.type, addedAt, rating }, { status: 201 });
   }
 
   return Response.json({ error: 'not found' }, { status: 404 });

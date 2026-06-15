@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import type { WatchedEntry, WatchlistEntry, RoomWatchedEntry, RoomWatchlistEntry, RoomRatings } from '../types';
+import type { WatchedEntry, WatchlistEntry, RoomWatchedEntry, RoomWatchlistEntry, RoomRatings, RewatchEntry } from '../types';
 import { StarRating } from './StarRating';
 import { MoveToWatchedModal } from './MoveToWatchedModal';
 import { EmptyState } from './EmptyState';
@@ -18,11 +18,14 @@ function fuzzyMatch(query: string, target: string): boolean {
 interface MovieListProps {
   watched: WatchedEntry[] | RoomWatchedEntry[];
   watchlist: WatchlistEntry[] | RoomWatchlistEntry[];
-  type: 'watched' | 'watchlist';
-  onDeleteWatched: (id: string) => void;
-  onRate: (id: string, rating: number) => void;
-  onDeleteWatchlist: (id: string) => void;
-  onMoveToWatched: (id: string, rating: number) => void;
+  rewatch: RewatchEntry[];
+  type: 'watched' | 'watchlist' | 'rewatch';
+  onDeleteWatched?: (id: string) => void;
+  onRate?: (id: string, rating: number) => void;
+  onDeleteWatchlist?: (id: string) => void;
+  onDeleteRewatch?: (id: string) => void;
+  onMoveToWatched?: (id: string, rating: number) => void;
+  onMoveToRewatch?: (id: string) => void;
   onAddToRoom?: (entry: WatchlistEntry | RoomWatchlistEntry) => void;
   roomWatchlistIds?: Set<string>;
   emptyMessage?: string;
@@ -72,11 +75,14 @@ function RoomUserRatings({ ratings, currentUsername, onRate, entryId }: {
 export function MovieList({
   watched,
   watchlist,
+  rewatch,
   type,
   onDeleteWatched,
   onRate,
   onDeleteWatchlist,
+  onDeleteRewatch,
   onMoveToWatched,
+  onMoveToRewatch,
   onAddToRoom,
   roomWatchlistIds,
   emptyMessage,
@@ -85,29 +91,41 @@ export function MovieList({
 }: MovieListProps) {
   const [moveId, setMoveId] = useState<string | null>(null);
   const [moveName, setMoveName] = useState('');
+  const [moveRating, setMoveRating] = useState(0);
   const [search, setSearch] = useState('');
 
   const filteredWatched = useMemo(
-    () => watched.filter((e) => fuzzyMatch(search, e.name)),
+    () => (watched as any[]).filter((e) => fuzzyMatch(search, e.name)),
     [watched, search],
   );
 
   const filteredWatchlist = useMemo(
-    () => watchlist.filter((e) => fuzzyMatch(search, e.name)),
+    () => (watchlist as any[]).filter((e) => fuzzyMatch(search, e.name)),
     [watchlist, search],
   );
 
-  const list = type === 'watched' ? filteredWatched : filteredWatchlist;
-  const total = type === 'watched' ? watched.length : watchlist.length;
+  const filteredRewatch = useMemo(
+    () => (rewatch as any[]).filter((e) => fuzzyMatch(search, e.name)),
+    [rewatch, search],
+  );
+
+  const list = type === 'watched' ? filteredWatched : type === 'watchlist' ? filteredWatchlist : filteredRewatch;
+  const total = type === 'watched' ? watched.length : type === 'watchlist' ? watchlist.length : rewatch.length;
   const isFiltered = search.trim().length > 0;
 
   if (total === 0) {
-    return <EmptyState message={emptyMessage || (type === 'watched' ? 'No movies watched yet. Start by adding one above.' : 'Your watchlist is empty. Add movies you plan to watch.')} />;
+    let msg = emptyMessage;
+    if (!msg) {
+      if (type === 'watched') msg = 'No movies watched yet. Start by adding one above.';
+      else if (type === 'watchlist') msg = 'Your watchlist is empty. Add movies you plan to watch.';
+      else msg = 'Rewatch list is empty. Found something you want to see again?';
+    }
+    return <EmptyState message={msg} />;
   }
 
   return (
     <>
-      <div className="list-search">
+      <div className="list-search" style={{ marginTop: 8 }}>
         <input
           className="list-search-input"
           type="text"
@@ -155,20 +173,33 @@ export function MovieList({
                     <RoomUserRatings
                       ratings={(entry as RoomWatchedEntry).ratings}
                       currentUsername={currentUsername}
-                      onRate={onRate}
+                      onRate={onRate!}
                       entryId={entry.id}
                     />
                   ) : (
-                    <StarRating value={(entry as WatchedEntry).rating} onChange={(r) => onRate(entry.id, r)} />
+                    <StarRating value={(entry as WatchedEntry).rating} onChange={(r) => onRate!(entry.id, r)} />
                   )}
                 </span>
               ) : null}
               <span className="actions" onClick={(e) => e.stopPropagation()}>
                 {type === 'watched' ? (
-                  <button className="btn btn-danger" onClick={() => onDeleteWatched(entry.id)}>
-                    {'\u2716'}
-                  </button>
-                ) : (
+                  <>
+                    {rewatch.some(r => r.tmdbId === entry.tmdbId) ? (
+                      <span style={{ color: 'var(--overlay-0)', fontStyle: 'italic', fontSize: 11, paddingRight: 4, display: 'flex', alignItems: 'center' }}>in rewatch list</span>
+                    ) : (
+                      <button 
+                        className="btn btn-teal" 
+                        title="Move to Rewatch"
+                        onClick={() => onMoveToRewatch?.(entry.id)}
+                      >
+                        {'\u21BB'} Rewatch
+                      </button>
+                    )}
+                    <button className="btn btn-danger" onClick={() => onDeleteWatched!(entry.id)}>
+                      {'\u2716'}
+                    </button>
+                  </>
+                ) : type === 'watchlist' ? (
                   <>
                     {onAddToRoom && (
                       <button
@@ -183,7 +214,29 @@ export function MovieList({
                     <button className="btn btn-success" onClick={() => { setMoveId(entry.id); setMoveName(entry.name); }}>
                       {'\u25B6'} Move
                     </button>
-                    <button className="btn btn-danger" onClick={() => onDeleteWatchlist(entry.id)}>
+                    <button className="btn btn-danger" onClick={() => onDeleteWatchlist!(entry.id)}>
+                      {'\u2716'}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button className="btn btn-success" onClick={() => { 
+                      setMoveId(entry.id); 
+                      setMoveName(entry.name);
+                      const watchedEntry = (watched as any[]).find(w => w.tmdbId === entry.tmdbId);
+                      let initR = 0;
+                      if (watchedEntry) {
+                        if (isRoom) {
+                          initR = watchedEntry.ratings?.[currentUsername!] ?? 0;
+                        } else {
+                          initR = watchedEntry.rating ?? 0;
+                        }
+                      }
+                      setMoveRating(initR);
+                    }}>
+                      {'\u2713'} Finished
+                    </button>
+                    <button className="btn btn-danger" onClick={() => onDeleteRewatch!(entry.id)}>
                       {'\u2716'}
                     </button>
                   </>
@@ -197,8 +250,9 @@ export function MovieList({
       {moveId && (
         <MoveToWatchedModal
           movieName={moveName}
+          initialRating={moveRating}
           onConfirm={(rating) => {
-            onMoveToWatched(moveId, rating);
+            onMoveToWatched!(moveId, rating);
             setMoveId(null);
           }}
           onCancel={() => setMoveId(null)}

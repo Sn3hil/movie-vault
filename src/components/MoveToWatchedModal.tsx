@@ -3,12 +3,13 @@ import { StarRating } from './StarRating';
 
 interface MoveToWatchedModalProps {
   movieName: string;
+  initialRating?: number;
   onConfirm: (rating: number) => void;
   onCancel: () => void;
 }
 
-export function MoveToWatchedModal({ movieName, onConfirm, onCancel }: MoveToWatchedModalProps) {
-  const [rating, setRating] = useState(0);
+export function MoveToWatchedModal({ movieName, initialRating = 0, onConfirm, onCancel }: MoveToWatchedModalProps) {
+  const [rating, setRating] = useState(initialRating);
 
   return (
     <div className="modal-overlay" onClick={onCancel}>

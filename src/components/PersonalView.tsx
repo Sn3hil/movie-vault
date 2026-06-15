@@ -1,22 +1,27 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useFetch } from '../hooks/useMovies';
 import { MovieList } from './MovieList';
 import { AddMovieForm } from './AddMovieForm';
-import type { MovieSearchResult, WatchlistEntry, RoomWatchlistEntry } from '../types';
+import type { MovieSearchResult, WatchlistEntry, RoomWatchlistEntry, RewatchEntry } from '../types';
 
 interface PersonalViewProps {
   username: string;
 }
 
+type SubTabType = 'watched' | 'watchlist' | 'rewatch';
+
 export function PersonalView({ username }: PersonalViewProps) {
+  const [activeSubTab, setActiveSubTab] = useState<SubTabType>('watched');
   const { user, userActions } = useFetchBased(username);
   const room = useFetch<any>('/api/room');
 
   const watched = user.data?.watched ?? [];
   const watchlist = user.data?.watchlist ?? [];
+  const rewatch = user.data?.rewatch ?? [];
 
   const watchedIds = useMemo(() => new Set<string>(watched.map((m: any) => `${m.type}-${m.tmdbId}`)), [watched]);
   const watchlistIds = useMemo(() => new Set<string>(watchlist.map((m: any) => `${m.type}-${m.tmdbId}`)), [watchlist]);
+  const rewatchIds = useMemo(() => new Set<string>(rewatch.map((m: any) => `${m.type}-${m.tmdbId}`)), [rewatch]);
 
   const roomWatchlistIds = new Set<string>();
   if (room.data?.watchlist) {
@@ -35,57 +40,101 @@ export function PersonalView({ username }: PersonalViewProps) {
 
   return (
     <div className={`content-area${user.loading ? ' reloading' : ''}`}>
-      <div>
-        <div className="section-header">
-          <span className="section-title">{'>'} Watched</span>
-          <span className="section-count">{watched.length} titles</span>
+      <div className="sub-tab-bar">
+        <div 
+          className={`sub-tab-item${activeSubTab === 'watched' ? ' active' : ''}`}
+          onClick={() => setActiveSubTab('watched')}
+        >
+          {'>'} Watched ({watched.length})
         </div>
-        <AddMovieForm placeholder="Search for a title to add..." onAdd={(result) => userActions.addWatched(result)} existingIds={watchedIds} />
-        <MovieList
-          watched={watched}
-          watchlist={[]}
-          type="watched"
-          onDeleteWatched={userActions.removeWatched}
-          onRate={userActions.updateRating}
-          onDeleteWatchlist={() => {}}
-          onMoveToWatched={() => {}}
-          scope="user"
-        />
-      </div>
-      <div style={{ marginTop: 20 }}>
-        <div className="section-header">
-          <span className="section-title">{'>'} Watchlist</span>
-          <span className="section-count">{watchlist.length} titles</span>
+        <div 
+          className={`sub-tab-item${activeSubTab === 'watchlist' ? ' active' : ''}`}
+          onClick={() => setActiveSubTab('watchlist')}
+        >
+          {'>'} Watchlist ({watchlist.length})
         </div>
-        <AddMovieForm placeholder="Search for a title to add..." onAdd={(result) => userActions.addWatchlist(result)} existingIds={watchlistIds} />
-        <MovieList
-          watched={[]}
-          watchlist={watchlist}
-          type="watchlist"
-          onDeleteWatched={() => {}}
-          onRate={() => {}}
-          onDeleteWatchlist={userActions.removeWatchlist}
-          onMoveToWatched={(id, rating) => userActions.moveToWatched(id, rating)}
-          onAddToRoom={(entry: WatchlistEntry | RoomWatchlistEntry) => {
-            fetch('/api/room/watchlist', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                tmdbId: entry.tmdbId,
-                type: entry.type,
-                name: entry.name,
-                poster: entry.poster,
-                username,
-                criticRating: (entry as WatchlistEntry).criticRating,
-                tmdbUrl: entry.tmdbUrl,
-                year: entry.year,
-              }),
-            }).then(() => room.refetch());
-          }}
-          roomWatchlistIds={roomWatchlistIds}
-          scope="user"
-        />
+        <div 
+          className={`sub-tab-item${activeSubTab === 'rewatch' ? ' active' : ''}`}
+          onClick={() => setActiveSubTab('rewatch')}
+        >
+          {'>'} Rewatch ({rewatch.length})
+        </div>
       </div>
+
+      {activeSubTab === 'watched' && (
+        <div className="tab-pane">
+          <AddMovieForm 
+            placeholder="Search for a title to add to Watched..." 
+            onAdd={(result) => userActions.addWatched(result)} 
+            existingIds={watchedIds} 
+          />
+          <MovieList
+            watched={watched}
+            watchlist={[]}
+            rewatch={rewatch}
+            type="watched"
+            onDeleteWatched={userActions.removeWatched}
+            onRate={userActions.updateRating}
+            onMoveToRewatch={userActions.moveToRewatch}
+            scope="user"
+          />
+        </div>
+      )}
+
+      {activeSubTab === 'watchlist' && (
+        <div className="tab-pane">
+          <AddMovieForm 
+            placeholder="Search for a title to add to Watchlist..." 
+            onAdd={(result) => userActions.addWatchlist(result)} 
+            existingIds={watchlistIds} 
+          />
+          <MovieList
+            watched={[]}
+            watchlist={watchlist}
+            rewatch={[]}
+            type="watchlist"
+            onDeleteWatchlist={userActions.removeWatchlist}
+            onMoveToWatched={(id, rating) => userActions.moveToWatched(id, rating)}
+            onAddToRoom={(entry: WatchlistEntry | RoomWatchlistEntry) => {
+              fetch('/api/room/watchlist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  tmdbId: entry.tmdbId,
+                  type: entry.type,
+                  name: entry.name,
+                  poster: entry.poster,
+                  username,
+                  criticRating: (entry as WatchlistEntry).criticRating,
+                  tmdbUrl: entry.tmdbUrl,
+                  year: entry.year,
+                }),
+              }).then(() => room.refetch());
+            }}
+            roomWatchlistIds={roomWatchlistIds}
+            scope="user"
+          />
+        </div>
+      )}
+
+      {activeSubTab === 'rewatch' && (
+        <div className="tab-pane">
+          <AddMovieForm 
+            placeholder="Search for a title to add to Rewatch List..." 
+            onAdd={(result) => userActions.addRewatch(result)} 
+            existingIds={rewatchIds} 
+          />
+          <MovieList
+            watched={watched}
+            watchlist={[]}
+            rewatch={rewatch}
+            type="rewatch"
+            onDeleteRewatch={userActions.removeRewatch}
+            onMoveToWatched={(id, rating) => userActions.rewatchToWatched(id, rating)}
+            scope="user"
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -138,6 +187,30 @@ function useFetchBased(username: string | null) {
     },
     async moveToWatched(id: string, rating: number) {
       await fetch(`/api/user/${username}/watchlist/${id}/move`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rating }),
+      });
+      user.refetch();
+    },
+    async addRewatch(result: MovieSearchResult) {
+      await fetch(`/api/user/${username}/rewatch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mediaPayload(result)),
+      });
+      user.refetch();
+    },
+    async removeRewatch(id: string) {
+      await fetch(`/api/user/${username}/rewatch/${id}`, { method: 'DELETE' });
+      user.refetch();
+    },
+    async moveToRewatch(id: string) {
+      await fetch(`/api/user/${username}/watched/${id}/move-to-rewatch`, {
+        method: 'POST',
+      });
+      user.refetch();
+    },
+    async rewatchToWatched(id: string, rating: number) {
+      await fetch(`/api/user/${username}/rewatch/${id}/move-to-watched`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rating }),
       });
       user.refetch();

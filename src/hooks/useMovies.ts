@@ -148,6 +148,31 @@ export function useRoomMovies(lastUpdate: number) {
         });
         room.refetch();
       },
+      async addRewatch(result: MovieSearchResult, username: string) {
+        await apiFetch('/api/room/rewatch', {
+          method: 'POST',
+          body: JSON.stringify({ ...resultToMediaPayload(result), username }),
+        });
+        room.refetch();
+      },
+      async removeRewatch(id: string) {
+        await apiFetch(`/api/room/rewatch/${id}`, { method: 'DELETE' });
+        room.refetch();
+      },
+      async moveToRewatch(id: string, username: string) {
+        await apiFetch(`/api/room/watched/${id}/move-to-rewatch`, {
+          method: 'POST',
+          body: JSON.stringify({ username }),
+        });
+        room.refetch();
+      },
+      async rewatchToWatched(id: string, rating: number, username: string) {
+        await apiFetch(`/api/room/rewatch/${id}/move-to-watched`, {
+          method: 'POST',
+          body: JSON.stringify({ rating, username }),
+        });
+        room.refetch();
+      },
     },
   };
 }

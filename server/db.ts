@@ -53,6 +53,17 @@ db.run(`
 `);
 
 db.run(`
+  CREATE TABLE IF NOT EXISTS user_rewatch (
+    id        TEXT    PRIMARY KEY,
+    username  TEXT    NOT NULL,
+    tmdb_id   INTEGER NOT NULL,
+    type      TEXT    NOT NULL,
+    added_at  TEXT    NOT NULL,
+    FOREIGN KEY (tmdb_id, type) REFERENCES media(tmdb_id, type)
+  )
+`);
+
+db.run(`
   CREATE TABLE IF NOT EXISTS room_watched (
     id        TEXT    PRIMARY KEY,
     tmdb_id   INTEGER NOT NULL,
@@ -76,6 +87,17 @@ db.run(`
 
 db.run(`
   CREATE TABLE IF NOT EXISTS room_watchlist (
+    id        TEXT    PRIMARY KEY,
+    tmdb_id   INTEGER NOT NULL,
+    type      TEXT    NOT NULL,
+    added_at  TEXT    NOT NULL,
+    added_by  TEXT    NOT NULL,
+    FOREIGN KEY (tmdb_id, type) REFERENCES media(tmdb_id, type)
+  )
+`);
+
+db.run(`
+  CREATE TABLE IF NOT EXISTS room_rewatch (
     id        TEXT    PRIMARY KEY,
     tmdb_id   INTEGER NOT NULL,
     type      TEXT    NOT NULL,
