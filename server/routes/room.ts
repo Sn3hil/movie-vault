@@ -271,6 +271,16 @@ export async function handleRoomRoute(req: Request, url: URL): Promise<Response>
         `INSERT INTO room_rewatch (id, tmdb_id, type, added_at, added_by) VALUES (?, ?, ?, ?, ?)`,
         [id, tmdbId, type, addedAt, username],
       );
+      const existingWatched = db.query(
+        `SELECT id FROM room_watched WHERE tmdb_id = ? AND type = ?`,
+      ).get(tmdbId, type);
+      if (!existingWatched) {
+        const watchedId = generateId();
+        db.run(
+          `INSERT INTO room_watched (id, tmdb_id, type, rating, added_at, added_by) VALUES (?, ?, ?, 0, ?, ?)`,
+          [watchedId, tmdbId, type, addedAt, username],
+        );
+      }
     })();
 
     roomBroadcaster.debouncedNotify('room-updated');
@@ -331,6 +341,8 @@ export async function handleRoomRoute(req: Request, url: URL): Promise<Response>
     ).get(id) as { tmdb_id: number; type: string } | null;
     if (!existing) return Response.json({ error: 'not found' }, { status: 404 });
 
+    const addedAt = new Date().toISOString();
+
     db.transaction(() => {
       db.run(`DELETE FROM room_rewatch WHERE id = ?`, [id]);
       
@@ -349,6 +361,16 @@ export async function handleRoomRoute(req: Request, url: URL): Promise<Response>
         ).all(watched.id) as { rating: number }[];
         const avg = Math.round(rows.reduce((s, r) => s + r.rating, 0) / rows.length);
         db.run(`UPDATE room_watched SET rating = ? WHERE id = ?`, [avg, watched.id]);
+      } else {
+        const newId = generateId();
+        db.run(
+          `INSERT INTO room_watched (id, tmdb_id, type, rating, added_at, added_by) VALUES (?, ?, ?, ?, ?, ?)`,
+          [newId, existing.tmdb_id, existing.type, rating, addedAt, username],
+        );
+        db.run(
+          `INSERT INTO room_ratings (room_watched_id, username, rating) VALUES (?, ?, ?)`,
+          [newId, username, rating],
+        );
       }
     })();
 

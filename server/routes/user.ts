@@ -232,14 +232,26 @@ export async function handleUserRoute(req: Request, url: URL): Promise<Response>
     const addedAt = new Date().toISOString();
     const parsedCriticRating = typeof criticRating === 'number' ? criticRating : null;
 
-    db.run(
-      `INSERT OR IGNORE INTO media (tmdb_id, type, name, poster, tmdb_url, year, critic_rating) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [tmdbId, type, name.trim(), (poster as string | null) ?? null, (tmdbUrl as string | null) ?? null, (year as string | null) ?? null, parsedCriticRating],
-    );
-    db.run(
-      `INSERT INTO user_rewatch (id, username, tmdb_id, type, added_at) VALUES (?, ?, ?, ?, ?)`,
-      [id, username, tmdbId, type, addedAt],
-    );
+    db.transaction(() => {
+      db.run(
+        `INSERT OR IGNORE INTO media (tmdb_id, type, name, poster, tmdb_url, year, critic_rating) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [tmdbId, type, name.trim(), (poster as string | null) ?? null, (tmdbUrl as string | null) ?? null, (year as string | null) ?? null, parsedCriticRating],
+      );
+      db.run(
+        `INSERT INTO user_rewatch (id, username, tmdb_id, type, added_at) VALUES (?, ?, ?, ?, ?)`,
+        [id, username, tmdbId, type, addedAt],
+      );
+      const existingWatched = db.query(
+        `SELECT id FROM user_watched WHERE username = ? AND tmdb_id = ? AND type = ?`,
+      ).get(username, tmdbId, type);
+      if (!existingWatched) {
+        const watchedId = generateId();
+        db.run(
+          `INSERT INTO user_watched (id, username, tmdb_id, type, rating, added_at) VALUES (?, ?, ?, ?, 0, ?)`,
+          [watchedId, username, tmdbId, type, addedAt],
+        );
+      }
+    })();
 
     return Response.json(
       { id, name: name.trim(), addedAt, poster, criticRating: parsedCriticRating, tmdbUrl, year, tmdbId, type },
@@ -306,10 +318,21 @@ export async function handleUserRoute(req: Request, url: URL): Promise<Response>
 
     db.transaction(() => {
       db.run(`DELETE FROM user_rewatch WHERE id = ? AND username = ?`, [id, username]);
-      db.run(
-        `UPDATE user_watched SET rating = ? WHERE tmdb_id = ? AND type = ? AND username = ?`,
-        [rating, existing.tmdb_id, existing.type, username],
-      );
+      const existingWatched = db.query(
+        `SELECT id FROM user_watched WHERE username = ? AND tmdb_id = ? AND type = ?`,
+      ).get(username, existing.tmdb_id, existing.type);
+      if (existingWatched) {
+        db.run(
+          `UPDATE user_watched SET rating = ? WHERE tmdb_id = ? AND type = ? AND username = ?`,
+          [rating, existing.tmdb_id, existing.type, username],
+        );
+      } else {
+        const newId = generateId();
+        db.run(
+          `INSERT INTO user_watched (id, username, tmdb_id, type, rating, added_at) VALUES (?, ?, ?, ?, ?, ?)`,
+          [newId, username, existing.tmdb_id, existing.type, rating, addedAt],
+        );
+      }
     })();
 
     return Response.json({ id: existing.tmdb_id /* Send back something valid */, tmdbId: existing.tmdb_id, type: existing.type, addedAt, rating }, { status: 201 });
