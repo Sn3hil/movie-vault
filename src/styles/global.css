@@ -27,7 +27,7 @@
   --crust: #11111b;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', 'Monaco', monospace;
   --radius: 0;
-  --border: 1px solid var(--surface-1);
+  --border: 0px solid var(--surface-1);
 }
 
 *, *::before, *::after {

@@ -162,18 +162,25 @@ export function AddMovieForm({ placeholder = 'Search...', onAdd, existingIds }: 
               ) : (
                 <span style={{ width: 28, height: 42, border: '1px solid var(--surface-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--overlay-0)', flexShrink: 0 }}>N/A</span>
               )}
-              <span className="suggestion-title">
-                {result.title}
-                {existingIds?.has(`${result.media_type}-${result.id}`) && (
-                  <span style={{ fontSize: 9, color: 'var(--overlay-0)', marginLeft: 6 }}>(added)</span>
-                )}
+              <span className="suggestion-info">
+                <span className="suggestion-title">
+                  {result.title}
+                  {existingIds?.has(`${result.media_type}-${result.id}`) && (
+                    <span style={{ fontSize: 9, color: 'var(--overlay-0)', marginLeft: 6 }}>(added)</span>
+                  )}
+                </span>
+                <span className="suggestion-meta">
+                  {result.release_date ? (
+                    <span className="suggestion-year">{result.release_date.slice(0, 4)}</span>
+                  ) : null}
+                  {result.media_type === 'tv' && (
+                    <span className="media-type-tag">TV</span>
+                  )}
+                  {result.vote_average ? (
+                    <span className="critic-rating">{result.vote_average.toFixed(1)}</span>
+                  ) : null}
+                </span>
               </span>
-              <span className="suggestion-year">
-                {result.release_date ? `(${result.release_date.slice(0, 4)})` : ''}
-              </span>
-              {result.media_type === 'tv' && (
-                <span className="media-type-tag" style={{ marginLeft: 4 }}>TV</span>
-              )}
               {!existingIds?.has(`${result.media_type}-${result.id}`) && (
                 <button
                   className="suggestion-add"

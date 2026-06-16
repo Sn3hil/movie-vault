@@ -156,16 +156,20 @@ export function MovieList({
               <span className="index">#{i + 1}</span>
               {entry.poster && <img src={entry.poster} alt="" className="movie-poster" />}
               <span className="name">
-                {entry.type === 'tv' && <span className="media-type-tag">TV</span>}
-                {entry.name}
-                {(entry as any).year ? (
-                  <span className="movie-year">{(entry as any).year}</span>
-                ) : null}
-                {entry.criticRating ? (
-                  <span className="critic-rating">
-                    {entry.criticRating.toFixed(1)}
-                  </span>
-                ) : null}
+                <span className="title-row">
+                  {entry.type === 'tv' && <span className="media-type-tag">TV</span>}
+                  {entry.name}
+                </span>
+                <span className="meta-row">
+                  {(entry as any).year ? (
+                    <span className="movie-year">{(entry as any).year}</span>
+                  ) : null}
+                  {entry.criticRating ? (
+                    <span className="critic-rating">
+                      {entry.criticRating.toFixed(1)}
+                    </span>
+                  ) : null}
+                </span>
               </span>
               {type === 'watched' ? (
                 <span onClick={(e) => e.stopPropagation()}>

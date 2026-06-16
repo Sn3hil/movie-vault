@@ -194,19 +194,28 @@
 }
 
 .tab-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   animation: fadeIn 0.2s ease both;
 }
 
 .movie-list {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 420px;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
 .content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   opacity: 1;
   transition: opacity 0.2s ease;
 }
@@ -240,12 +249,26 @@
 .movie-item .name {
   flex: 1;
   color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.movie-item .title-row {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+}
+
+.movie-item .meta-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
 }
 
 .movie-poster {
@@ -257,22 +280,18 @@
 }
 
 .movie-year {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--overlay-0);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .critic-rating {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--yellow);
-  background: rgba(249, 226, 175, 0.1);
-  border: 1px solid rgba(249, 226, 175, 0.2);
-  padding: 1px 4px;
-  border-radius: 2px;
   white-space: nowrap;
   flex-shrink: 0;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .media-type-tag {
@@ -472,14 +491,31 @@
   border: var(--border);
 }
 
-.suggestion-item .suggestion-title {
+.suggestion-info {
   flex: 1;
-  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
 }
 
-.suggestion-item .suggestion-year {
+.suggestion-info .suggestion-title {
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.suggestion-meta .suggestion-year {
   color: var(--overlay-0);
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .suggestion-add {
