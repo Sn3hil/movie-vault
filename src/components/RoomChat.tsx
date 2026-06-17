@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
-const MAX_MESSAGES = 20;
+const MAX_MESSAGES = 50;
 const MAX_MESSAGE_LENGTH = 200;
 
 interface ChatMessage {
@@ -40,9 +40,14 @@ export function RoomChat({ username }: RoomChatProps) {
     es.addEventListener('chat-message', (e: MessageEvent) => {
       const msg: ChatMessage = JSON.parse(e.data);
       setMessages((prev) => {
+        if (prev.some((m) => m.id === msg.id)) return prev;
         const next = [...prev, msg];
         return next.length > MAX_MESSAGES ? next.slice(next.length - MAX_MESSAGES) : next;
       });
+    });
+
+    es.addEventListener('chat-clear', () => {
+      setMessages([]);
     });
 
     return () => es.close();
@@ -61,14 +66,24 @@ export function RoomChat({ username }: RoomChatProps) {
 
     setSending(true);
     try {
-      await fetch('/api/room/chat', {
+      const res = await fetch('/api/room/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, message: trimmed }),
       });
+      const data = await res.json();
+      if (data.cleared) {
+        setMessages([]);
+      } else if (data.id) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === data.id)) return prev;
+          const next = [...prev, data as ChatMessage];
+          return next.length > MAX_MESSAGES ? next.slice(next.length - MAX_MESSAGES) : next;
+        });
+      }
       setInputText('');
     } catch {
-      // message lost to the void — the SSE event will pick it up if it went through
+      // message lost to the void
     } finally {
       setSending(false);
     }

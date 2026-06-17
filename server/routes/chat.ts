@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { roomBroadcaster } from '../sse';
 
-const MAX_MESSAGES = 20;
+const MAX_MESSAGES = 50;
 const MAX_MESSAGE_LENGTH = 200;
 
 function validateUsername(username: string): string | null {
@@ -57,6 +57,12 @@ export async function handleChatRoute(req: Request, url: URL): Promise<Response>
     const trimmed = message.trim();
     if (trimmed.length > MAX_MESSAGE_LENGTH) {
       return Response.json({ error: `message must be ${MAX_MESSAGE_LENGTH} characters or less` }, { status: 400 });
+    }
+
+    if (trimmed === '!clear') {
+      db.run('DELETE FROM room_chat');
+      roomBroadcaster.broadcast('chat-clear', '{}');
+      return Response.json({ cleared: true });
     }
 
     const id = generateId();
