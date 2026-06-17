@@ -27,13 +27,16 @@ export function RoomChat({ username }: RoomChatProps) {
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     fetch('/api/room/chat')
       .then((res) => res.json())
       .then((data) => {
+        if (cancelled) return;
         setMessages((data as { messages: ChatMessage[] }).messages);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { if (!cancelled) setLoading(false); });
 
     const es = new EventSource('/api/room/events');
 
@@ -47,10 +50,13 @@ export function RoomChat({ username }: RoomChatProps) {
     });
 
     es.addEventListener('chat-clear', () => {
-      setMessages([]);
+      refetchMessages();
     });
 
-    return () => es.close();
+    return () => {
+      cancelled = true;
+      es.close();
+    };
   }, []);
 
   useEffect(() => {
@@ -58,6 +64,14 @@ export function RoomChat({ username }: RoomChatProps) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
   }, [messages]);
+
+  async function refetchMessages() {
+    try {
+      const res = await fetch('/api/room/chat');
+      const data = await res.json();
+      setMessages((data as { messages: ChatMessage[] }).messages);
+    } catch {}
+  }
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -73,7 +87,7 @@ export function RoomChat({ username }: RoomChatProps) {
       });
       const data = await res.json();
       if (data.cleared) {
-        setMessages([]);
+        await refetchMessages();
       } else if (data.id) {
         setMessages((prev) => {
           if (prev.some((m) => m.id === data.id)) return prev;
