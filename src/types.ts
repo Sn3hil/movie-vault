@@ -35,10 +35,15 @@ export interface RewatchEntry {
   type: 'movie' | 'tv';
 }
 
+export interface WatchlistOverlaps {
+  [key: string]: string[];
+}
+
 export interface UserData {
   watched: WatchedEntry[];
   watchlist: WatchlistEntry[];
   rewatch: RewatchEntry[];
+  watchlistOverlaps: WatchlistOverlaps;
 }
 
 export interface RoomRatings {

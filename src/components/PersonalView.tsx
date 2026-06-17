@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useFetch } from '../hooks/useMovies';
+import { useSSE } from '../hooks/useSSE';
 import { MovieList } from './MovieList';
 import { AddMovieForm } from './AddMovieForm';
 import type { MovieSearchResult, WatchlistEntry, RoomWatchlistEntry, RewatchEntry } from '../types';
@@ -19,12 +20,14 @@ export function PersonalView({ username }: PersonalViewProps) {
     setActiveSubTab(tab);
     localStorage.setItem('vault_personal_tab', tab);
   };
-  const { user, userActions } = useFetchBased(username);
+  const lastUpdate = useSSE();
+  const { user, userActions } = useFetchBased(username, lastUpdate);
   const room = useFetch<any>('/api/room');
 
   const watched = user.data?.watched ?? [];
   const watchlist = user.data?.watchlist ?? [];
   const rewatch = user.data?.rewatch ?? [];
+  const watchlistOverlaps = user.data?.watchlistOverlaps ?? {};
 
   const watchedIds = useMemo(() => new Set<string>(watched.map((m: any) => `${m.type}-${m.tmdbId}`)), [watched]);
   const watchlistIds = useMemo(() => new Set<string>(watchlist.map((m: any) => `${m.type}-${m.tmdbId}`)), [watchlist]);
@@ -119,6 +122,7 @@ export function PersonalView({ username }: PersonalViewProps) {
               }).then(() => room.refetch());
             }}
             roomWatchlistIds={roomWatchlistIds}
+            watchlistOverlaps={watchlistOverlaps}
             scope="user"
           />
         </div>
@@ -146,8 +150,8 @@ export function PersonalView({ username }: PersonalViewProps) {
   );
 }
 
-function useFetchBased(username: string | null) {
-  const user = useFetch<any>(`/api/user/${username}/data`, [username]);
+function useFetchBased(username: string | null, lastUpdate: number) {
+  const user = useFetch<any>(`/api/user/${username}/data`, [username, lastUpdate]);
 
   function mediaPayload(result: MovieSearchResult) {
     return {

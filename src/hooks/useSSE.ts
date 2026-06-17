@@ -22,6 +22,11 @@ export function useSSE() {
       delayRef.current = BASE_DELAY;
     });
 
+    es.addEventListener('watchlist-updated', () => {
+      setLastUpdate((n) => n + 1);
+      delayRef.current = BASE_DELAY;
+    });
+
     es.onerror = () => {
       es.close();
       esRef.current = null;

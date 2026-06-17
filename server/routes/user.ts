@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { roomBroadcaster } from '../sse';
 
 type MediaType = 'movie' | 'tv';
 
@@ -62,7 +63,23 @@ export async function handleUserRoute(req: Request, url: URL): Promise<Response>
       ORDER BY ur.added_at DESC
     `).all(username);
 
-    return Response.json({ watched, watchlist, rewatch });
+    const overlapRows = db.query(`
+      SELECT uwl2.tmdb_id, uwl2.type, uwl2.username
+      FROM user_watchlist uwl2
+      WHERE (uwl2.tmdb_id, uwl2.type) IN (
+        SELECT tmdb_id, type FROM user_watchlist WHERE username = ?
+      )
+      AND uwl2.username != ?
+    `).all(username, username) as { tmdb_id: number; type: string; username: string }[];
+
+    const watchlistOverlaps: Record<string, string[]> = {};
+    for (const row of overlapRows) {
+      const key = `${row.type}-${row.tmdb_id}`;
+      if (!watchlistOverlaps[key]) watchlistOverlaps[key] = [];
+      watchlistOverlaps[key].push(row.username);
+    }
+
+    return Response.json({ watched, watchlist, rewatch, watchlistOverlaps });
   }
 
   // POST /api/user/:username/watched
@@ -159,8 +176,17 @@ export async function handleUserRoute(req: Request, url: URL): Promise<Response>
       [id, username, tmdbId, type, addedAt],
     );
 
+    const overlapOthers = db.query(
+      `SELECT username FROM user_watchlist WHERE tmdb_id = ? AND type = ? AND username != ?`,
+    ).all(tmdbId, type, username) as { username: string }[];
+
+    roomBroadcaster.debouncedNotify('watchlist-updated');
+
     return Response.json(
-      { id, name: name.trim(), addedAt, poster, criticRating: parsedCriticRating, tmdbUrl, year, tmdbId, type },
+      {
+        id, name: name.trim(), addedAt, poster, criticRating: parsedCriticRating, tmdbUrl, year, tmdbId, type,
+        overlapUsernames: overlapOthers.map(r => r.username),
+      },
       { status: 201 },
     );
   }
@@ -173,6 +199,7 @@ export async function handleUserRoute(req: Request, url: URL): Promise<Response>
     if (err) return Response.json({ error: err }, { status: 400 });
 
     db.run(`DELETE FROM user_watchlist WHERE id = ? AND username = ?`, [id, username]);
+    roomBroadcaster.debouncedNotify('watchlist-updated');
     return Response.json({ success: true });
   }
 
@@ -203,6 +230,8 @@ export async function handleUserRoute(req: Request, url: URL): Promise<Response>
         [newId, username, existing.tmdb_id, existing.type, rating, addedAt],
       );
     })();
+
+    roomBroadcaster.debouncedNotify('watchlist-updated');
 
     const entry = db.query(`
       SELECT uw.id, m.name, uw.rating, uw.added_at AS addedAt,

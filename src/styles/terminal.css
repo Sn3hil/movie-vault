@@ -211,6 +211,91 @@
   overflow-x: hidden;
 }
 
+.chat-message-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 0;
+  font-family: var(--mono, 'Courier New', monospace);
+}
+
+.chat-message {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 1px 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.chat-time {
+  color: var(--overlay-0);
+  font-size: 11px;
+  flex-shrink: 0;
+  min-width: 42px;
+  font-family: var(--mono, 'Courier New', monospace);
+}
+
+.chat-user {
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.chat-user--self {
+  color: var(--green);
+}
+
+.chat-user--other {
+  color: var(--blue);
+}
+
+.chat-text {
+  color: var(--text);
+  word-break: break-word;
+}
+
+.chat-input-area {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  border-top: var(--border);
+  padding: 8px 4px 4px 4px;
+}
+
+.chat-prompt {
+  color: var(--green);
+  font-size: 12px;
+  font-family: var(--mono, 'Courier New', monospace);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.chat-input-form {
+  flex: 1;
+  display: flex;
+}
+
+.chat-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--mono, 'Courier New', monospace);
+  outline: none;
+  padding: 2px 0;
+}
+
+.chat-input::placeholder {
+  color: var(--overlay-0);
+  font-style: italic;
+}
+
 .content-area {
   flex: 1;
   display: flex;
@@ -320,6 +405,16 @@
 .movie-item .actions {
   display: flex;
   gap: 4px;
+}
+
+.watchlist-overlap-label {
+  color: var(--overlay-0);
+  font-style: italic;
+  font-size: 11px;
+  padding-right: 4px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
 }
 
 .btn {

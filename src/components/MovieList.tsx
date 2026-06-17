@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import type { WatchedEntry, WatchlistEntry, RoomWatchedEntry, RoomWatchlistEntry, RoomRatings, RewatchEntry } from '../types';
+import type { WatchedEntry, WatchlistEntry, RoomWatchedEntry, RoomWatchlistEntry, RoomRatings, RewatchEntry, WatchlistOverlaps } from '../types';
 import { StarRating } from './StarRating';
 import { MoveToWatchedModal } from './MoveToWatchedModal';
 import { EmptyState } from './EmptyState';
@@ -28,6 +28,7 @@ interface MovieListProps {
   onMoveToRewatch?: (id: string) => void;
   onAddToRoom?: (entry: WatchlistEntry | RoomWatchlistEntry) => void;
   roomWatchlistIds?: Set<string>;
+  watchlistOverlaps?: WatchlistOverlaps;
   emptyMessage?: string;
   isRoom?: boolean;
   scope: string;
@@ -85,6 +86,7 @@ export function MovieList({
   onMoveToRewatch,
   onAddToRoom,
   roomWatchlistIds,
+  watchlistOverlaps,
   emptyMessage,
   isRoom,
   currentUsername,
@@ -205,6 +207,17 @@ export function MovieList({
                   </>
                 ) : type === 'watchlist' ? (
                   <>
+                    {(() => {
+                      const key = `${entry.type}-${entry.tmdbId}`;
+                      const usernames = watchlistOverlaps?.[key];
+                      if (usernames && usernames.length > 0) {
+                        const label = usernames.length === 1
+                          ? `in ${usernames[0]}'s watchlist`
+                          : `in ${usernames.join(', ')}'s watchlist`;
+                        return <span className="watchlist-overlap-label">{label}</span>;
+                      }
+                      return null;
+                    })()}
                     {onAddToRoom && (
                       <button
                         className={`btn${roomWatchlistIds?.has(`${entry.type}-${entry.tmdbId}`) ? '' : ' btn-warning'}`}

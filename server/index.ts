@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { handleUserRoute } from './routes/user';
 import { handleRoomRoute } from './routes/room';
+import { handleChatRoute } from './routes/chat';
 import { roomBroadcaster } from './sse';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -144,6 +145,14 @@ const server = Bun.serve({
     // API routes
     if (url.pathname.startsWith('/api/user/')) {
       const res = await handleUserRoute(req, url);
+      for (const [k, v] of Object.entries(corsHeaders)) {
+        res.headers.set(k, v);
+      }
+      return res;
+    }
+
+    if (url.pathname === '/api/room/chat') {
+      const res = await handleChatRoute(req, url);
       for (const [k, v] of Object.entries(corsHeaders)) {
         res.headers.set(k, v);
       }

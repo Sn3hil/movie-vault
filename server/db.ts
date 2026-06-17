@@ -106,3 +106,12 @@ db.run(`
     FOREIGN KEY (tmdb_id, type) REFERENCES media(tmdb_id, type)
   )
 `);
+
+db.run(`
+  CREATE TABLE IF NOT EXISTS room_chat (
+    id        TEXT    PRIMARY KEY,
+    username  TEXT    NOT NULL,
+    message   TEXT    NOT NULL,
+    sent_at   TEXT    NOT NULL
+  )
+`);

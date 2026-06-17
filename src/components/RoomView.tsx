@@ -3,16 +3,18 @@ import { useSSE } from '../hooks/useSSE';
 import { useRoomMovies } from '../hooks/useMovies';
 import { MovieList } from './MovieList';
 import { AddMovieForm } from './AddMovieForm';
+import { RoomChat } from './RoomChat';
 
 interface RoomViewProps {
   username: string;
 }
 
-type SubTabType = 'watched' | 'watchlist' | 'rewatch';
+type SubTabType = 'watched' | 'watchlist' | 'rewatch' | 'chat';
 
 export function RoomView({ username }: RoomViewProps) {
   const [activeSubTab, setActiveSubTab] = useState<SubTabType>(() => {
-    return (localStorage.getItem('vault_room_tab') as SubTabType) || 'watched';
+    const saved = localStorage.getItem('vault_room_tab') as SubTabType | null;
+    return saved && ['watched', 'watchlist', 'rewatch', 'chat'].includes(saved) ? saved : 'watched';
   });
 
   const handleTabChange = (tab: SubTabType) => {
@@ -58,6 +60,12 @@ export function RoomView({ username }: RoomViewProps) {
           onClick={() => handleTabChange('rewatch')}
         >
           {'>'} Room Rewatch ({rewatch.length})
+        </div>
+        <div 
+          className={`sub-tab-item${activeSubTab === 'chat' ? ' active' : ''}`}
+          onClick={() => handleTabChange('chat')}
+        >
+          {'>'} Chat
         </div>
       </div>
 
@@ -126,6 +134,10 @@ export function RoomView({ username }: RoomViewProps) {
             currentUsername={username}
           />
         </div>
+      )}
+
+      {activeSubTab === 'chat' && (
+        <RoomChat username={username} />
       )}
     </div>
   );
