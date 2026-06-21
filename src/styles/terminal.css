@@ -769,6 +769,69 @@
   color: var(--overlay-0);
 }
 
+.statusbar-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  margin: 0 10px;
+}
+
+.statusbar-filter-input {
+  flex: 1;
+  padding: 3px 8px;
+  background: var(--surface-0);
+  border: var(--border);
+  color: var(--text);
+  font-size: 11px;
+  font-family: inherit;
+}
+
+.statusbar-filter-input:focus {
+  border-color: var(--rosewater);
+  outline: none;
+}
+
+.statusbar-filter-input::placeholder {
+  color: var(--overlay-0);
+}
+
+.statusbar-filter-label {
+  font-size: 11px;
+  color: var(--overlay-0);
+  white-space: nowrap;
+}
+
+.sort-group {
+  display: flex;
+}
+
+.sort-btn {
+  padding: 3px 8px;
+  background: var(--surface-0);
+  border: var(--border);
+  color: var(--subtext-0);
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sort-btn:hover {
+  background: var(--surface-1);
+  color: var(--text);
+}
+
+.sort-btn-param {
+  border-right: none;
+}
+
+.sort-btn-order {
+  min-width: 24px;
+  text-align: center;
+}
+
 .switch-user-btn {
   font-size: 11px;
   color: var(--overlay-1);
@@ -804,6 +867,10 @@
   .terminal-statusbar {
     padding: 4px 8px;
     font-size: 10px;
+  }
+
+  .statusbar-filter-input {
+    padding: 2px 6px;
   }
 
   .tab-item {

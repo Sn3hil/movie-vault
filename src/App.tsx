@@ -5,6 +5,7 @@ import { TerminalWindow } from './components/TerminalWindow';
 import { TabBar } from './components/TabBar';
 import { PersonalView } from './components/PersonalView';
 import { RoomView } from './components/RoomView';
+import { FilterProvider } from './hooks/FilterContext';
 import type { TabType } from './types';
 
 export function App() {
@@ -25,13 +26,15 @@ export function App() {
   const username = getUsername()!;
 
   return (
-    <TerminalWindow onLogout={() => setLoggedIn(false)}>
-      <TabBar currentTab={currentTab} onTabChange={handleTabChange} />
-      {currentTab === 'personal' ? (
-        <PersonalView username={username} />
-      ) : (
-        <RoomView username={username} />
-      )}
-    </TerminalWindow>
+    <FilterProvider>
+      <TerminalWindow onLogout={() => setLoggedIn(false)}>
+        <TabBar currentTab={currentTab} onTabChange={handleTabChange} />
+        {currentTab === 'personal' ? (
+          <PersonalView username={username} />
+        ) : (
+          <RoomView username={username} />
+        )}
+      </TerminalWindow>
+    </FilterProvider>
   );
 }

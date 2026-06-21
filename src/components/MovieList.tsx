@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { WatchedEntry, WatchlistEntry, RoomWatchedEntry, RoomWatchlistEntry, RoomRatings, RewatchEntry, WatchlistOverlaps } from '../types';
 import { StarRating } from './StarRating';
 import { MoveToWatchedModal } from './MoveToWatchedModal';
 import { EmptyState } from './EmptyState';
+import { useFilter } from '../hooks/FilterContext';
 
 function fuzzyMatch(query: string, target: string): boolean {
   const q = query.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -94,7 +95,7 @@ export function MovieList({
   const [moveId, setMoveId] = useState<string | null>(null);
   const [moveName, setMoveName] = useState('');
   const [moveRating, setMoveRating] = useState(0);
-  const [search, setSearch] = useState('');
+  const { search, setSearch, setFilterLabel, sortBy, sortOrder } = useFilter();
 
   const filteredWatched = useMemo(
     () => (watched as any[]).filter((e) => fuzzyMatch(search, e.name)),
@@ -115,7 +116,28 @@ export function MovieList({
   const total = type === 'watched' ? watched.length : type === 'watchlist' ? watchlist.length : rewatch.length;
   const isFiltered = search.trim().length > 0;
 
+  const sortedList = useMemo(() => {
+    return [...list].sort((a: any, b: any) => {
+      let cmp = 0;
+      if (sortBy === 'name') {
+        cmp = a.name.localeCompare(b.name);
+      } else if (sortBy === 'rating') {
+        cmp = (a.criticRating ?? 0) - (b.criticRating ?? 0);
+      } else if (sortBy === 'year') {
+        cmp = (a.year ?? '').localeCompare(b.year ?? '');
+      } else if (sortBy === 'added') {
+        cmp = new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
+      }
+      return sortOrder === 'asc' ? cmp : -cmp;
+    });
+  }, [list, sortBy, sortOrder]);
+
+  useEffect(() => {
+    setFilterLabel(isFiltered ? `${list.length}/${total}` : `${total}`);
+  }, [list.length, total, isFiltered, setFilterLabel]);
+
   if (total === 0) {
+    setFilterLabel('');
     let msg = emptyMessage;
     if (!msg) {
       if (type === 'watched') msg = 'No movies watched yet. Start by adding one above.';
@@ -127,25 +149,13 @@ export function MovieList({
 
   return (
     <>
-      <div className="list-search" style={{ marginTop: 8 }}>
-        <input
-          className="list-search-input"
-          type="text"
-          placeholder={`Filter ${type}...`}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <span className="list-search-count">
-          {isFiltered ? `${list.length}/${total}` : `${total}`}
-        </span>
-      </div>
       {list.length === 0 ? (
         <div className="empty-state" style={{ padding: '12px', fontSize: 12 }}>
           <span className="line">no matches for &ldquo;{search}&rdquo;</span>
         </div>
       ) : (
         <div className="movie-list">
-          {list.map((entry, i) => (
+          {sortedList.map((entry, i) => (
             <div
               key={entry.id}
               className="movie-item"
