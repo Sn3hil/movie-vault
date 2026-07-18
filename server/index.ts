@@ -182,6 +182,15 @@ const server = Bun.serve({
     const staticRes = serveStatic(url);
     if (staticRes) return staticRes;
 
+    // SPA fallback: serve index.html for client-side routing
+    const indexPath = join(DIST_DIR, 'index.html');
+    if (existsSync(indexPath)) {
+      const content = readFileSync(indexPath);
+      return new Response(content, {
+        headers: { 'Content-Type': 'text/html' },
+      });
+    }
+
     return new Response('not found', { status: 404 });
   },
 });
