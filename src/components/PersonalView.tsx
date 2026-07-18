@@ -1,25 +1,29 @@
-import { useMemo, useState } from 'react';
-import { useFetch } from '../hooks/useMovies';
+import { useEffect, useMemo } from 'react';
+import { useParams, useNavigate, NavLink } from 'react-router-dom';
+import { getUsername } from '../hooks/useUser';
+import { useFetch, authApiFetch } from '../hooks/useMovies';
 import { useSSE } from '../hooks/useSSE';
 import { MovieList } from './MovieList';
 import { AddMovieForm } from './AddMovieForm';
 import type { MovieSearchResult, WatchlistEntry, RoomWatchlistEntry, RewatchEntry } from '../types';
 
-interface PersonalViewProps {
-  username: string;
-}
-
 type SubTabType = 'watched' | 'watchlist' | 'rewatch';
 
-export function PersonalView({ username }: PersonalViewProps) {
-  const [activeSubTab, setActiveSubTab] = useState<SubTabType>(() => {
-    return (localStorage.getItem('vault_personal_tab') as SubTabType) || 'watched';
-  });
+const VALID_VIEWS: SubTabType[] = ['watched', 'watchlist', 'rewatch'];
 
-  const handleTabChange = (tab: SubTabType) => {
-    setActiveSubTab(tab);
-    localStorage.setItem('vault_personal_tab', tab);
-  };
+export function PersonalView() {
+  const username = getUsername()!;
+  const { view } = useParams<{ view: string }>();
+  const navigate = useNavigate();
+
+  const activeSubTab = view as SubTabType;
+
+  useEffect(() => {
+    if (!VALID_VIEWS.includes(activeSubTab)) {
+      navigate('/personal/watchlist', { replace: true });
+    }
+  }, [activeSubTab, navigate]);
+
   const lastUpdate = useSSE();
   const { user, userActions } = useFetchBased(username, lastUpdate);
   const room = useFetch<any>('/api/room');
@@ -51,32 +55,32 @@ export function PersonalView({ username }: PersonalViewProps) {
   return (
     <div className={`content-area${user.loading ? ' reloading' : ''}`}>
       <div className="sub-tab-bar">
-        <div 
-          className={`sub-tab-item${activeSubTab === 'watched' ? ' active' : ''}`}
-          onClick={() => handleTabChange('watched')}
+        <NavLink
+          to="/personal/watched"
+          className={({ isActive }) => `sub-tab-item${isActive ? ' active' : ''}`}
         >
           {'>'} Watched ({watched.length})
-        </div>
-        <div 
-          className={`sub-tab-item${activeSubTab === 'watchlist' ? ' active' : ''}`}
-          onClick={() => handleTabChange('watchlist')}
+        </NavLink>
+        <NavLink
+          to="/personal/watchlist"
+          className={({ isActive }) => `sub-tab-item${isActive ? ' active' : ''}`}
         >
           {'>'} Watchlist ({watchlist.length})
-        </div>
-        <div 
-          className={`sub-tab-item${activeSubTab === 'rewatch' ? ' active' : ''}`}
-          onClick={() => handleTabChange('rewatch')}
+        </NavLink>
+        <NavLink
+          to="/personal/rewatch"
+          className={({ isActive }) => `sub-tab-item${isActive ? ' active' : ''}`}
         >
           {'>'} Rewatch ({rewatch.length})
-        </div>
+        </NavLink>
       </div>
 
       {activeSubTab === 'watched' && (
         <div className="tab-pane">
-          <AddMovieForm 
-            placeholder="Search for a title to add to Watched..." 
-            onAdd={(result) => userActions.addWatched(result)} 
-            existingIds={watchedIds} 
+          <AddMovieForm
+            placeholder="Search for a title to add to Watched..."
+            onAdd={(result) => userActions.addWatched(result)}
+            existingIds={watchedIds}
           />
           <MovieList
             watched={watched}
@@ -93,10 +97,10 @@ export function PersonalView({ username }: PersonalViewProps) {
 
       {activeSubTab === 'watchlist' && (
         <div className="tab-pane">
-          <AddMovieForm 
-            placeholder="Search for a title to add to Watchlist..." 
-            onAdd={(result) => userActions.addWatchlist(result)} 
-            existingIds={watchlistIds} 
+          <AddMovieForm
+            placeholder="Search for a title to add to Watchlist..."
+            onAdd={(result) => userActions.addWatchlist(result)}
+            existingIds={watchlistIds}
           />
           <MovieList
             watched={[]}
@@ -106,9 +110,8 @@ export function PersonalView({ username }: PersonalViewProps) {
             onDeleteWatchlist={userActions.removeWatchlist}
             onMoveToWatched={(id, rating) => userActions.moveToWatched(id, rating)}
             onAddToRoom={(entry: WatchlistEntry | RoomWatchlistEntry) => {
-              fetch('/api/room/watchlist', {
+              authApiFetch('/api/room/watchlist', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   tmdbId: entry.tmdbId,
                   type: entry.type,
@@ -130,10 +133,10 @@ export function PersonalView({ username }: PersonalViewProps) {
 
       {activeSubTab === 'rewatch' && (
         <div className="tab-pane">
-          <AddMovieForm 
-            placeholder="Search for a title to add to Rewatch List..." 
-            onAdd={(result) => userActions.addRewatch(result)} 
-            existingIds={rewatchIds} 
+          <AddMovieForm
+            placeholder="Search for a title to add to Rewatch List..."
+            onAdd={(result) => userActions.addRewatch(result)}
+            existingIds={rewatchIds}
           />
           <MovieList
             watched={watched}
@@ -167,62 +170,59 @@ function useFetchBased(username: string | null, lastUpdate: number) {
 
   const userActions = {
     async addWatched(result: MovieSearchResult) {
-      await fetch(`/api/user/${username}/watched`, {
+      await authApiFetch(`/api/user/${username}/watched`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(mediaPayload(result)),
       });
       user.refetch();
     },
     async updateRating(id: string, rating: number) {
-      await fetch(`/api/user/${username}/watched/${id}/rating`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rating }),
+      await authApiFetch(`/api/user/${username}/watched/${id}/rating`, {
+        method: 'PUT', body: JSON.stringify({ rating }),
       });
       user.refetch();
     },
     async removeWatched(id: string) {
-      await fetch(`/api/user/${username}/watched/${id}`, { method: 'DELETE' });
+      await authApiFetch(`/api/user/${username}/watched/${id}`, { method: 'DELETE' });
       user.refetch();
     },
     async addWatchlist(result: MovieSearchResult) {
-      await fetch(`/api/user/${username}/watchlist`, {
+      await authApiFetch(`/api/user/${username}/watchlist`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(mediaPayload(result)),
       });
       user.refetch();
     },
     async removeWatchlist(id: string) {
-      await fetch(`/api/user/${username}/watchlist/${id}`, { method: 'DELETE' });
+      await authApiFetch(`/api/user/${username}/watchlist/${id}`, { method: 'DELETE' });
       user.refetch();
     },
     async moveToWatched(id: string, rating: number) {
-      await fetch(`/api/user/${username}/watchlist/${id}/move`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rating }),
+      await authApiFetch(`/api/user/${username}/watchlist/${id}/move`, {
+        method: 'POST', body: JSON.stringify({ rating }),
       });
       user.refetch();
     },
     async addRewatch(result: MovieSearchResult) {
-      await fetch(`/api/user/${username}/rewatch`, {
+      await authApiFetch(`/api/user/${username}/rewatch`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(mediaPayload(result)),
       });
       user.refetch();
     },
     async removeRewatch(id: string) {
-      await fetch(`/api/user/${username}/rewatch/${id}`, { method: 'DELETE' });
+      await authApiFetch(`/api/user/${username}/rewatch/${id}`, { method: 'DELETE' });
       user.refetch();
     },
     async moveToRewatch(id: string) {
-      await fetch(`/api/user/${username}/watched/${id}/move-to-rewatch`, {
+      await authApiFetch(`/api/user/${username}/watched/${id}/move-to-rewatch`, {
         method: 'POST',
       });
       user.refetch();
     },
     async rewatchToWatched(id: string, rating: number) {
-      await fetch(`/api/user/${username}/rewatch/${id}/move-to-watched`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rating }),
+      await authApiFetch(`/api/user/${username}/rewatch/${id}/move-to-watched`, {
+        method: 'POST', body: JSON.stringify({ rating }),
       });
       user.refetch();
     },

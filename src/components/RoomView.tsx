@@ -1,26 +1,29 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useParams, useNavigate, NavLink } from 'react-router-dom';
+import { getUsername } from '../hooks/useUser';
 import { useSSE } from '../hooks/useSSE';
 import { useRoomMovies } from '../hooks/useMovies';
 import { MovieList } from './MovieList';
 import { AddMovieForm } from './AddMovieForm';
 import { RoomChat } from './RoomChat';
 
-interface RoomViewProps {
-  username: string;
-}
-
 type SubTabType = 'watched' | 'watchlist' | 'rewatch' | 'chat';
 
-export function RoomView({ username }: RoomViewProps) {
-  const [activeSubTab, setActiveSubTab] = useState<SubTabType>(() => {
-    const saved = localStorage.getItem('vault_room_tab') as SubTabType | null;
-    return saved && ['watched', 'watchlist', 'rewatch', 'chat'].includes(saved) ? saved : 'watched';
-  });
+const VALID_VIEWS: SubTabType[] = ['watched', 'watchlist', 'rewatch', 'chat'];
 
-  const handleTabChange = (tab: SubTabType) => {
-    setActiveSubTab(tab);
-    localStorage.setItem('vault_room_tab', tab);
-  };
+export function RoomView() {
+  const username = getUsername()!;
+  const { view } = useParams<{ view: string }>();
+  const navigate = useNavigate();
+
+  const activeSubTab = view as SubTabType;
+
+  useEffect(() => {
+    if (!VALID_VIEWS.includes(activeSubTab)) {
+      navigate('/room/watchlist', { replace: true });
+    }
+  }, [activeSubTab, navigate]);
+
   const lastUpdate = useSSE();
   const { room, roomActions } = useRoomMovies(lastUpdate);
 
@@ -43,38 +46,38 @@ export function RoomView({ username }: RoomViewProps) {
   return (
     <div className={`content-area${room.loading ? ' reloading' : ''}`}>
       <div className="sub-tab-bar">
-        <div 
-          className={`sub-tab-item${activeSubTab === 'watched' ? ' active' : ''}`}
-          onClick={() => handleTabChange('watched')}
+        <NavLink
+          to="/room/watched"
+          className={({ isActive }) => `sub-tab-item${isActive ? ' active' : ''}`}
         >
           {'>'} Room Watched ({watched.length})
-        </div>
-        <div 
-          className={`sub-tab-item${activeSubTab === 'watchlist' ? ' active' : ''}`}
-          onClick={() => handleTabChange('watchlist')}
+        </NavLink>
+        <NavLink
+          to="/room/watchlist"
+          className={({ isActive }) => `sub-tab-item${isActive ? ' active' : ''}`}
         >
           {'>'} Room Watchlist ({watchlist.length})
-        </div>
-        <div 
-          className={`sub-tab-item${activeSubTab === 'rewatch' ? ' active' : ''}`}
-          onClick={() => handleTabChange('rewatch')}
+        </NavLink>
+        <NavLink
+          to="/room/rewatch"
+          className={({ isActive }) => `sub-tab-item${isActive ? ' active' : ''}`}
         >
           {'>'} Room Rewatch ({rewatch.length})
-        </div>
-        <div 
-          className={`sub-tab-item${activeSubTab === 'chat' ? ' active' : ''}`}
-          onClick={() => handleTabChange('chat')}
+        </NavLink>
+        <NavLink
+          to="/room/chat"
+          className={({ isActive }) => `sub-tab-item${isActive ? ' active' : ''}`}
         >
           {'>'} Chat
-        </div>
+        </NavLink>
       </div>
 
       {activeSubTab === 'watched' && (
         <div className="tab-pane">
-          <AddMovieForm 
-            placeholder="Search for a title to add to Room Watched..." 
-            onAdd={(result) => roomActions.addWatched(result, username)} 
-            existingIds={watchedIds} 
+          <AddMovieForm
+            placeholder="Search for a title to add to Room Watched..."
+            onAdd={(result) => roomActions.addWatched(result, username)}
+            existingIds={watchedIds}
           />
           <MovieList
             watched={watched}
@@ -94,10 +97,10 @@ export function RoomView({ username }: RoomViewProps) {
 
       {activeSubTab === 'watchlist' && (
         <div className="tab-pane">
-          <AddMovieForm 
-            placeholder="Search for a title to add to Room Watchlist..." 
-            onAdd={(result) => roomActions.addWatchlist(result, username)} 
-            existingIds={watchlistIds} 
+          <AddMovieForm
+            placeholder="Search for a title to add to Room Watchlist..."
+            onAdd={(result) => roomActions.addWatchlist(result, username)}
+            existingIds={watchlistIds}
           />
           <MovieList
             watched={[]}
@@ -116,10 +119,10 @@ export function RoomView({ username }: RoomViewProps) {
 
       {activeSubTab === 'rewatch' && (
         <div className="tab-pane">
-          <AddMovieForm 
-            placeholder="Search for a title to add to Room Rewatch List..." 
-            onAdd={(result) => roomActions.addRewatch(result, username)} 
-            existingIds={rewatchIds} 
+          <AddMovieForm
+            placeholder="Search for a title to add to Room Rewatch List..."
+            onAdd={(result) => roomActions.addRewatch(result, username)}
+            existingIds={rewatchIds}
           />
           <MovieList
             watched={watched}

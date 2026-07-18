@@ -1,10 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getToken } from '../api';
 import type { MovieSearchResult } from '../types';
 
 interface FetchState<T> {
   loading: boolean;
   error: string | null;
   data: T | null;
+}
+
+function authFetch(url: string, options?: RequestInit): Promise<Response> {
+  const token = getToken();
+  const headers = new Headers(options?.headers);
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return fetch(url, { ...options, headers });
 }
 
 export function useFetch<T>(url: string, deps: unknown[] = []): FetchState<T> & { refetch: () => void } {
@@ -17,7 +27,7 @@ export function useFetch<T>(url: string, deps: unknown[] = []): FetchState<T> & 
     let cancelled = false;
     setState((s) => ({ ...s, loading: true, error: null }));
 
-    fetch(url)
+    authFetch(url)
       .then((res) => {
         if (!res.ok) return res.json().then((d) => Promise.reject(d.error || 'request failed'));
         return res.json();
@@ -35,16 +45,23 @@ export function useFetch<T>(url: string, deps: unknown[] = []): FetchState<T> & 
   return { ...state, refetch };
 }
 
-async function apiFetch(url: string, options: RequestInit): Promise<Response> {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
+export async function authApiFetch(url: string, options: RequestInit): Promise<Response> {
+  const token = getToken();
+  const headers = new Headers(options.headers);
+  headers.set('Content-Type', 'application/json');
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as any).error || `request failed (${res.status})`);
   }
   return res;
+}
+
+function apiFetch(url: string, options: RequestInit): Promise<Response> {
+  return authApiFetch(url, options);
 }
 
 function resultToMediaPayload(result: MovieSearchResult) {

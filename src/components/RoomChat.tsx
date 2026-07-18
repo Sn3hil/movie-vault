@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { getToken } from '../api';
 
 const MAX_MESSAGES = 50;
 const MAX_MESSAGE_LENGTH = 200;
@@ -19,6 +20,11 @@ function formatTime(iso: string): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export function RoomChat({ username }: RoomChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
@@ -29,7 +35,7 @@ export function RoomChat({ username }: RoomChatProps) {
   useEffect(() => {
     let cancelled = false;
 
-    fetch('/api/room/chat')
+    fetch('/api/room/chat', { headers: authHeaders() })
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
@@ -67,7 +73,7 @@ export function RoomChat({ username }: RoomChatProps) {
 
   async function refetchMessages() {
     try {
-      const res = await fetch('/api/room/chat');
+      const res = await fetch('/api/room/chat', { headers: authHeaders() });
       const data = await res.json();
       setMessages((data as { messages: ChatMessage[] }).messages);
     } catch {}
@@ -82,7 +88,7 @@ export function RoomChat({ username }: RoomChatProps) {
     try {
       const res = await fetch('/api/room/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ username, message: trimmed }),
       });
       const data = await res.json();

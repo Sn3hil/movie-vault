@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { getToken } from '../api';
 import type { MovieSearchResult } from '../types';
 
 interface AddMovieFormProps {
@@ -40,8 +41,10 @@ export function AddMovieForm({ placeholder = 'Search...', onAdd, existingIds }: 
     abortRef.current = controller;
 
     try {
+      const token = getToken();
       const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
         signal: controller.signal,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (res.status === 501) {
         setSuggestions([]);

@@ -115,3 +115,11 @@ db.run(`
     sent_at   TEXT    NOT NULL
   )
 `);
+
+db.run(`
+  CREATE TABLE IF NOT EXISTS users (
+    username      TEXT    PRIMARY KEY,
+    password_hash TEXT,
+    created_at    TEXT    NOT NULL
+  )
+`);

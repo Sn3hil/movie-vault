@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { clearUsername, getUsername } from '../hooks/useUser';
+import { useNavigate } from 'react-router-dom';
+import { getUsername } from '../hooks/useUser';
+import { clearAuth } from '../api';
+import { useAuth } from '../hooks/useAuth';
 import { useFilter, type SortBy, type SortOrder } from '../hooks/FilterContext';
-
-interface TerminalWindowProps {
-  children: React.ReactNode;
-  onLogout: () => void;
-}
 
 const sortByCycle: SortBy[] = ['name', 'rating', 'year', 'added'];
 
@@ -13,8 +11,10 @@ function sortLabel(by: SortBy): string {
   return by === 'added' ? 'added' : by;
 }
 
-export function TerminalWindow({ children, onLogout }: TerminalWindowProps) {
+export function TerminalWindow({ children }: { children: React.ReactNode }) {
   const username = getUsername();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const { search, setSearch, filterLabel, sortBy, setSortBy, sortOrder, setSortOrder } = useFilter();
   const [showSort, setShowSort] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
@@ -78,7 +78,7 @@ export function TerminalWindow({ children, onLogout }: TerminalWindowProps) {
             </button>
           </div>
         </div>
-        <span className="switch-user-btn" onClick={() => { clearUsername(); onLogout(); }}>
+        <span className="switch-user-btn" onClick={() => { logout(); clearAuth(); navigate('/login'); }}>
           switch user
         </span>
       </div>

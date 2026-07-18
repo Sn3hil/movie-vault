@@ -1,18 +1,23 @@
 import { useState } from 'react';
-import { setUsername } from '../hooks/useUser';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
-interface LoginScreenProps {
-  onLogin: () => void;
-}
-
-export function LoginScreen({ onLogin }: LoginScreenProps) {
-  const [value, setValue] = useState('');
+export function LoginPage() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  function handleSubmit(e: React.FormEvent) {
+  const from = (location.state as any)?.from?.pathname || '/personal/watchlist';
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const trimmed = value.trim();
+    setError('');
 
+    const trimmed = username.trim();
     if (!trimmed || trimmed.length < 3 || trimmed.length > 20) {
       setError('username must be 3-20 alphanumeric characters');
       return;
@@ -21,9 +26,20 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
       setError('username must be alphanumeric');
       return;
     }
+    if (!password) {
+      setError('password is required');
+      return;
+    }
 
-    setUsername(trimmed);
-    onLogin();
+    setBusy(true);
+    try {
+      await login(trimmed, password);
+      navigate(from, { replace: true });
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -55,19 +71,30 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           color: 'var(--subtext-0)',
           marginBottom: 20,
         }}>
-          A collaborative movie database. Enter a username to get started.
+          A collaborative movie database. Enter your credentials.
         </div>
         <form onSubmit={handleSubmit}>
           <div className="terminal-prompt" style={{ fontSize: 14, marginBottom: 12 }}>
-            {'>'} Enter username: <span className="cursor" />
+            {'>'} Username:
           </div>
           <input
             className="add-movie-input"
             type="text"
             placeholder="alphanumeric, 3-20 chars"
-            value={value}
-            onChange={(e) => { setValue(e.target.value); setError(''); }}
+            value={username}
+            onChange={(e) => { setUsername(e.target.value); setError(''); }}
             autoFocus
+            style={{ width: '100%', marginBottom: 12 }}
+          />
+          <div className="terminal-prompt" style={{ fontSize: 14, marginBottom: 12 }}>
+            {'>'} Password:
+          </div>
+          <input
+            className="add-movie-input"
+            type="password"
+            placeholder="enter password"
+            value={password}
+            onChange={(e) => { setPassword(e.target.value); setError(''); }}
             style={{ width: '100%', marginBottom: 12 }}
           />
           {error && (
@@ -75,8 +102,8 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
               {'>'} Error: {error}
             </div>
           )}
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-            {'>'} Enter
+          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={busy}>
+            {busy ? 'logging in...' : '> Enter'}
           </button>
         </form>
       </div>

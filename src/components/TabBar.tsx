@@ -1,25 +1,20 @@
-import type { TabType } from '../types';
+import { NavLink } from 'react-router-dom';
 
-interface TabBarProps {
-  currentTab: TabType;
-  onTabChange: (tab: TabType) => void;
-}
-
-export function TabBar({ currentTab, onTabChange }: TabBarProps) {
+export function TabBar() {
   return (
     <div className="tab-bar">
-      <div
-        className={`tab-item${currentTab === 'personal' ? ' active' : ''}`}
-        onClick={() => onTabChange('personal')}
+      <NavLink
+        to="/personal"
+        className={({ isActive }) => `tab-item${isActive ? ' active' : ''}`}
       >
         [Personal]
-      </div>
-      <div
-        className={`tab-item${currentTab === 'room' ? ' active' : ''}`}
-        onClick={() => onTabChange('room')}
+      </NavLink>
+      <NavLink
+        to="/room"
+        className={({ isActive }) => `tab-item${isActive ? ' active' : ''}`}
       >
         [Room]
-      </div>
+      </NavLink>
     </div>
   );
 }

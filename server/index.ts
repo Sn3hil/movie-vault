@@ -5,6 +5,8 @@ import { dirname } from 'path';
 import { handleUserRoute } from './routes/user';
 import { handleRoomRoute } from './routes/room';
 import { handleChatRoute } from './routes/chat';
+import { handleLogin, handleRefresh, handleVerify } from './routes/auth';
+import { authMiddleware } from './auth';
 import { roomBroadcaster } from './sse';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -96,12 +98,21 @@ const server = Bun.serve({
     const corsHeaders = {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     };
 
     if (method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
     }
+
+    // Auth middleware
+    const authResp = authMiddleware(req);
+    if (authResp) return authResp;
+
+    // Auth routes
+    if (url.pathname === '/api/auth/login' && method === 'POST') return await handleLogin(req);
+    if (url.pathname === '/api/auth/refresh' && method === 'POST') return await handleRefresh(req);
+    if (url.pathname === '/api/auth/verify' && method === 'GET') return await handleVerify(req);
 
     // SSE endpoint
     if (url.pathname === '/api/room/events') {
