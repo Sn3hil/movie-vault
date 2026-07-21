@@ -28,6 +28,19 @@ export function AddMovieForm({ placeholder = 'Search...', onAdd, existingIds }: 
     }
   }, [selectedIndex]);
 
+  useEffect(() => {
+    function handleGlobalKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key.length !== 1) return;
+
+      inputRef.current?.focus();
+    }
+    document.addEventListener('keydown', handleGlobalKey);
+    return () => document.removeEventListener('keydown', handleGlobalKey)
+  }, [])
+
   const doSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSuggestions([]);
@@ -107,7 +120,11 @@ export function AddMovieForm({ placeholder = 'Search...', onAdd, existingIds }: 
       e.preventDefault();
       onAdd(suggestion);
       // Keep dropdown open and focus on input for rapid multi-add
-      inputRef.current?.focus();
+      // inputRef.current?.focus();
+      setValue(' ');
+      setSuggestions([]);
+      setShowSuggestions(false);
+      inputRef.current?.blur();
     } else if (e.key === 'Enter' && selectedIndex >= 0) {
       // Enter opens the TMDB page for the highlighted suggestion
       e.preventDefault();
@@ -124,7 +141,12 @@ export function AddMovieForm({ placeholder = 'Search...', onAdd, existingIds }: 
     e.stopPropagation();
     onAdd(result);
     // Return focus to input without clearing — user can keep adding
-    inputRef.current?.focus();
+    // inputRef.current?.focus();
+
+    setValue('');
+    setSuggestions([]);
+    setShowSuggestions(false);
+    inputRef.current?.blur();
   }
 
   function handleCardClick(result: MovieSearchResult) {

@@ -50,11 +50,16 @@ function RoomUserRatings({ ratings, currentUsername, onRate, entryId }: {
         <span key={user}>
           <span className="username-label">{user}:</span>{' '}
           <span className="star-rating readonly">
-            {[1, 2, 3, 4, 5].map((s) => (
-              <span key={s} className={`star${s <= rating ? ' filled' : ''}`} style={{ cursor: 'default' }}>
-                {s <= rating ? '\u2605' : '\u2606'}
-              </span>
-            ))}
+            {[1, 2, 3, 4, 5].map((s) => {
+              const w = rating >= s * 2 ? '100%' : rating >= s * 2 - 1 ? '50%' : '0%';
+              return (
+                <span key={s} className="star" style={{ cursor: 'default' }}>
+                  {'\u2605'}
+                  <span className="star-fill" style={{ width: w }}>{'\u2605'}</span>
+                </span>
+              );
+            })}
+
           </span>
         </span>
       ))}
@@ -203,8 +208,8 @@ export function MovieList({
                     {rewatch.some(r => r.tmdbId === entry.tmdbId) ? (
                       <span style={{ color: 'var(--overlay-0)', fontStyle: 'italic', fontSize: 11, paddingRight: 4, display: 'flex', alignItems: 'center' }}>in rewatch list</span>
                     ) : (
-                      <button 
-                        className="btn btn-teal" 
+                      <button
+                        className="btn btn-teal"
                         title="Move to Rewatch"
                         onClick={() => onMoveToRewatch?.(entry.id)}
                       >
@@ -247,8 +252,8 @@ export function MovieList({
                   </>
                 ) : (
                   <>
-                    <button className="btn btn-success" onClick={() => { 
-                      setMoveId(entry.id); 
+                    <button className="btn btn-success" onClick={() => {
+                      setMoveId(entry.id);
                       setMoveName(entry.name);
                       const watchedEntry = (watched as any[]).find(w => w.tmdbId === entry.tmdbId);
                       let initR = 0;
