@@ -95,7 +95,7 @@ export async function handleUserRoute(req: Request, url: URL): Promise<Response>
     if (!isMediaType(type)) return Response.json({ error: 'type must be "movie" or "tv"' }, { status: 400 });
     if (!name || typeof name !== 'string' || !name.trim()) return Response.json({ error: 'name is required' }, { status: 400 });
 
-    const rating = typeof body.rating === 'number' ? Math.max(0, Math.min(5, Math.round(body.rating))) : 0;
+    const rating = typeof body.rating === 'number' ? Math.max(0, Math.min(10, Math.round(body.rating))) : 0;
     const id = generateId();
     const addedAt = new Date().toISOString();
 
@@ -119,8 +119,8 @@ export async function handleUserRoute(req: Request, url: URL): Promise<Response>
     if (err) return Response.json({ error: err }, { status: 400 });
 
     const body = await parseBody(req);
-    const rating = typeof body.rating === 'number' ? Math.max(0, Math.min(5, Math.round(body.rating))) : -1;
-    if (rating < 0 || rating > 5) return Response.json({ error: 'rating must be 0-5' }, { status: 400 });
+    const rating = typeof body.rating === 'number' ? Math.max(0, Math.min(10, Math.round(body.rating))) : -1;
+    if (rating < 0 || rating > 10) return Response.json({ error: 'rating must be 0-5' }, { status: 400 });
 
     const result = db.run(
       `UPDATE user_watched SET rating = ? WHERE id = ? AND username = ?`,
@@ -211,8 +211,8 @@ export async function handleUserRoute(req: Request, url: URL): Promise<Response>
     if (err) return Response.json({ error: err }, { status: 400 });
 
     const body = await parseBody(req);
-    const rating = typeof body.rating === 'number' ? Math.max(1, Math.min(5, Math.round(body.rating))) : -1;
-    if (rating < 1 || rating > 5) return Response.json({ error: 'rating must be 1-5' }, { status: 400 });
+    const rating = typeof body.rating === 'number' ? Math.max(1, Math.min(10, Math.round(body.rating))) : -1;
+    if (rating < 1 || rating > 10) return Response.json({ error: 'rating must be 1-5' }, { status: 400 });
 
     const existing = db.query(
       `SELECT tmdb_id, type FROM user_watchlist WHERE id = ? AND username = ?`,
@@ -334,7 +334,7 @@ export async function handleUserRoute(req: Request, url: URL): Promise<Response>
     if (err) return Response.json({ error: err }, { status: 400 });
 
     const body = await parseBody(req);
-    const rating = typeof body.rating === 'number' ? Math.max(0, Math.min(5, Math.round(body.rating))) : 0;
+    const rating = typeof body.rating === 'number' ? Math.max(0, Math.min(10, Math.round(body.rating))) : 0;
 
     const existing = db.query(
       `SELECT tmdb_id, type FROM user_rewatch WHERE id = ? AND username = ?`,

@@ -93,7 +93,7 @@ export async function handleRoomRoute(req: Request, url: URL): Promise<Response>
       return Response.json({ error: 'valid username is required' }, { status: 400 });
     }
 
-    const rating = typeof body.rating === 'number' ? Math.max(0, Math.min(5, Math.round(body.rating))) : 0;
+    const rating = typeof body.rating === 'number' ? Math.max(0, Math.min(10, Math.round(body.rating))) : 0;
     const id = generateId();
     const addedAt = new Date().toISOString();
 
@@ -123,9 +123,9 @@ export async function handleRoomRoute(req: Request, url: URL): Promise<Response>
     const id = parts[3];
     const body = await parseBody(req);
     const username = body.username;
-    const rating = typeof body.rating === 'number' ? Math.max(0, Math.min(5, Math.round(body.rating))) : -1;
+    const rating = typeof body.rating === 'number' ? Math.max(0, Math.min(10, Math.round(body.rating))) : -1;
 
-    if (rating < 0 || rating > 5) return Response.json({ error: 'rating must be 0-5' }, { status: 400 });
+    if (rating < 0 || rating > 10) return Response.json({ error: 'rating must be 0-5' }, { status: 400 });
     if (!username || typeof username !== 'string') return Response.json({ error: 'username is required' }, { status: 400 });
 
     const exists = db.query(`SELECT id FROM room_watched WHERE id = ?`).get(id);
@@ -215,9 +215,9 @@ export async function handleRoomRoute(req: Request, url: URL): Promise<Response>
     const id = parts[3];
     const body = await parseBody(req);
     const username = body.username;
-    const rating = typeof body.rating === 'number' ? Math.max(1, Math.min(5, Math.round(body.rating))) : -1;
+    const rating = typeof body.rating === 'number' ? Math.max(1, Math.min(10, Math.round(body.rating))) : -1;
 
-    if (rating < 1 || rating > 5) return Response.json({ error: 'rating must be 1-5' }, { status: 400 });
+    if (rating < 1 || rating > 10) return Response.json({ error: 'rating must be 1-5' }, { status: 400 });
     if (!username || typeof username !== 'string' || validateUsername(username)) {
       return Response.json({ error: 'valid username is required' }, { status: 400 });
     }
@@ -330,7 +330,7 @@ export async function handleRoomRoute(req: Request, url: URL): Promise<Response>
     const id = parts[3];
     const body = await parseBody(req);
     const username = body.username;
-    const rating = typeof body.rating === 'number' ? Math.max(0, Math.min(5, Math.round(body.rating))) : 0;
+    const rating = typeof body.rating === 'number' ? Math.max(0, Math.min(10, Math.round(body.rating))) : 0;
 
     if (!username || typeof username !== 'string' || validateUsername(username)) {
       return Response.json({ error: 'valid username is required' }, { status: 400 });
@@ -345,11 +345,11 @@ export async function handleRoomRoute(req: Request, url: URL): Promise<Response>
 
     db.transaction(() => {
       db.run(`DELETE FROM room_rewatch WHERE id = ?`, [id]);
-      
+
       const watched = db.query(
         `SELECT id FROM room_watched WHERE tmdb_id = ? AND type = ?`,
       ).get(existing.tmdb_id, existing.type) as { id: string } | null;
-      
+
       if (watched) {
         db.run(
           `INSERT OR REPLACE INTO room_ratings (room_watched_id, username, rating) VALUES (?, ?, ?)`,
